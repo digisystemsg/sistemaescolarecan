@@ -554,7 +554,7 @@ if('serviceWorker' in navigator){
    Cada entrega lleva un número de versión. Al abrir la plataforma (y cada cierto rato, o al volver a la
    pestaña) se compara con la versión publicada; si es distinta, aparece un aviso discreto abajo.
    Si es la misma, no pasa nada. Súbele el número cada vez que se publique una actualización. */
-const APP_VERSION = '2026-11-02-1850';
+const APP_VERSION = '2026-11-02-2010';
 let _avisoVersionMostrado = false, _ultimaRevisionVersion = 0;
 async function revisarVersionNueva(){
   if(_avisoVersionMostrado) return;
@@ -597,11 +597,10 @@ setInterval(revisarVersionNueva, 15*60*1000);
    solo las novedades posteriores a la última versión que vio, y que le tocan según su rol. Se guarda por usuario en este navegador. */
 const NOVEDADES = [
   {v:'2026-11-02-1850', items:[
-    {t:'Ver como docente', x:'En el Panel principal hay una tarjeta para ver, como lo ven los docentes, los términos y condiciones, el cambio de contraseña, un aviso y la pantalla de mantenimiento. Es solo una vista previa: no guarda nada.', panel:'panel', target:'#vp_card', para:'admin'},
-    {t:'Contraseña propia', x:'Si tu contraseña era la que se entrega al inicio, al entrar te pedimos crear una propia, con mínimo 6 caracteres: números, mayúscula, minúscula y un carácter especial.', panel:null, target:'#btn_novedades', abrirMenu:true, para:'todos'},
-    {t:'Pausar la plataforma', x:'En el Panel principal puedes pausar la plataforma para todos, menos para Dirección y Mantenimiento, mientras haces cambios. Escribe un mensaje, toca "Pausar para todos" y, cuando termines, "Reanudar".', panel:'panel', target:'#pausa_card', para:'admin'},
-    {t:'Términos y condiciones', x:'Al entrar por primera vez te pedimos leer y aceptar los términos y condiciones de uso y confidencialidad de la información. Se acepta una sola vez.', panel:null, target:'#btn_novedades', abrirMenu:true, para:'todos'},
-    {t:'Avisos momentáneos', x:'En el Panel principal puedes escribir un aviso corto y mandarlo a todas las personas que estén conectadas, o solo a una. Les aparece en una ventana y desaparece cuando lo leen o a los 10 minutos.', panel:'panel', target:'#av_card', para:'admin'}
+    {t:'Ver como docente', x:'En el Panel principal hay una tarjeta para ver, como lo ven los docentes, los términos y condiciones, el cambio de contraseña, un aviso y la pantalla de mantenimiento. Es solo una vista previa: no guarda nada.', panel:'panel', target:'#vp_card', para:'direccion'},
+    {t:'Contraseña propia', x:'Si tu contraseña era la que se entrega al inicio, al entrar te pedimos crear una propia, con mínimo 6 caracteres: números, mayúscula, minúscula y un carácter especial.', panel:'panel', target:'#mi_clave_card', para:'todos'},
+    {t:'Pausar la plataforma', x:'En el Panel principal puedes pausar la plataforma para todos, menos para Dirección y Mantenimiento, mientras haces cambios. Escribe un mensaje, toca "Pausar para todos" y, cuando termines, "Reanudar".', panel:'panel', target:'#pausa_card', para:'direccion'},
+    {t:'Avisos momentáneos', x:'En el Panel principal puedes escribir un aviso corto y mandarlo a las personas que estén conectadas en ese momento. Verás la lista de quién está conectado y marcas a una, a varias o a todas. Les aparece en una ventana y desaparece cuando lo leen o a los 10 minutos.', panel:'panel', target:'#av_card', para:'admin'}
   ]},
   {v:'2026-11-02-1340', items:[
     {t:'Nueva sección: Conducta', x:'"Reportes disciplinarios" ahora se llama Conducta y tiene dos pestañas: Reportes disciplinarios y Notas de conducta.', panel:'reportes', prefs:{condTab:'reportes'}, target:'#cond_tabs', para:'todos'},
@@ -609,20 +608,20 @@ const NOVEDADES = [
     {t:'Boletas y Caracterización', x:'El panel ahora se llama Boletas y Caracterización. La nota de conducta de la boleta sale sola, y si hay observaciones aparece un 📝 que te lleva a verlas (no se imprime el icono).', panel:'boletas', prefs:{bolTab:'boletas'}, target:'#bol_nota_conducta', para:'orientador'},
     {t:'Sugerencias de observaciones', x:'Aquí aparece una sugerencia según notas, conducta, asistencia y reportes a partir de P2. "Agregar a las observaciones" no borra lo que ya está escrito. Las recuperaciones se agregan solas.', panel:'boletas', prefs:{bolTab:'boletas'}, target:'#bol_sugerencia, .bol-obs', para:'orientador'},
     {t:'Caracterización más automática', x:'La conducta y las inasistencias salen solas de Conducta y de la boleta. Los comentarios de la boleta se reparten entre Reconocimiento y Recomendación.', panel:'boletas', prefs:{bolTab:'caract'}, target:'#bol_tab_caract', para:'orientador'},
-    {t:'Estudiantes retirados', x:'Con Editar puedes indicar hasta qué período estuvo un estudiante. Sus notas anteriores se conservan, y desde el período siguiente ya no aparece en las listas.', panel:'estudiantes', target:'button[onclick^="openStudentModal(\'"]', para:'gestion'},
+    {t:'Estudiantes retirados', x:'Con Editar puedes indicar hasta qué período estuvo un estudiante. Sus notas anteriores se conservan, y desde el período siguiente ya no aparece en las listas.', panel:'estudiantes', target:'button[onclick^="openStudentModal(\'"]', para:'admin'},
     {t:'Cambiar de docente en una materia', x:'Si asignas una materia que ya tenía otra maestra, pasa a la nueva. En Editar puedes activar "Proteger notas anteriores" para que la docente nueva no cambie las notas que ya estaban.', panel:'docentes', target:'button[onclick^="openTeacherModal(\'"]', para:'admin'},
     {t:'Reading en Inglés', x:'En Calificaciones de Inglés, desde P2, hay una columna Reading que vale el 10% de la nota.', panel:'calificaciones', target:'.ledger', para:'todos'},
     {t:'Indicador de sincronización', x:'Abajo a la izquierda, junto a tu foto, ves el estado de tus cambios. Con ✔ en verde y "Sincronizado", todo está guardado. Con ✖ en rojo, todavía hay cambios sin enviar: espera unos segundos o toca ahí para reintentar. Antes de cerrar la plataforma, revisa que se vea el ✔.', panel:null, target:'#sync-indicator', para:'todos'},
     {t:'Aviso de versión nueva', x:'Cuando haya una versión nueva te saldrá un aviso pequeño abajo a la derecha. Toca "Actualizar" para verla. Este recorrido lo abres otra vez con el botón "✨ Novedades" del menú.', panel:null, target:'#btn_novedades', abrirMenu:true, para:'todos'}
   ]}
 ];
+function novOk(i,u){ return i.para==='todos' || (i.para==='admin' && isAdmin(u)) || (i.para==='direccion' && exentoPausa(u)) || (i.para==='orientador' && gradosBoleta(u).length>0) || (i.para==='gestion' && puedeGestionarEstudiantes(u)) || (i.para==='vista' && puedeCambiarVista(u)); }
 let _novedadesRevisadas = false, _novUsuario = null, NOV = null;
 function novedadesParaMi(){
   const u = currentUser; if(!u || sesionEstudiante) return [];
   let visto = ''; try{ visto = localStorage.getItem('ecan_novedades_'+u.id) || ''; }catch(e){}
   if((u.novVisto||'') > visto) visto = u.novVisto;
-  const ok = i => i.para==='todos' || (i.para==='admin' && isAdmin(u)) || (i.para==='orientador' && gradosBoleta(u).length>0)
-    || (i.para==='gestion' && puedeGestionarEstudiantes(u)) || (i.para==='vista' && puedeCambiarVista(u));
+  const ok = i => novOk(i,u);
   return NOVEDADES.filter(n=>n.v>visto && n.v<=APP_VERSION).reduce((a,n)=>a.concat(n.items.filter(ok)), []);
 }
 function marcarNovedadesVistas(){
@@ -646,8 +645,6 @@ function revisarNovedades(){
   if(esPropietario(currentUser) || puedeCambiarVista(currentUser)){
     if(currentUser.novDetenido === APP_VERSION) return;
     try{ if(localStorage.getItem('ecan_nov_stop_'+currentUser.id) === APP_VERSION) return; }catch(e){}
-    setTimeout(()=>abrirNovedades(null, true), 700);
-    return;
   }
   if(visto === APP_VERSION) return;
   const lista = novedadesParaMi();
@@ -655,7 +652,7 @@ function revisarNovedades(){
   setTimeout(()=>abrirNovedades(lista, true), 700);
 }
 function abrirNovedades(lista, esAutomatico){
-  lista = lista || NOVEDADES.reduce((a,n)=>a.concat(n.items),[]).filter(i=>{ const u=currentUser; return i.para==='todos' || (i.para==='admin' && isAdmin(u)) || (i.para==='orientador' && gradosBoleta(u).length>0) || (i.para==='gestion' && puedeGestionarEstudiantes(u)) || (i.para==='vista' && puedeCambiarVista(u)); });
+  lista = lista || NOVEDADES.reduce((a,n)=>a.concat(n.items),[]).filter(i=>novOk(i,currentUser));
   if(!lista.length){ showToast('Por ahora no hay novedades para ti.'); return; }
   NOV = {lista, i:-1, auto:!!esAutomatico};
   dibujarNovedades();
@@ -1272,7 +1269,7 @@ function docActual(){
     observaciones: DB.observaciones, ajustes: DB.ajustes, rubros: DB.rubros,
     boletaDatos: DB.boletaDatos, hojas: DB.hojas, bitacora: DB.bitacora, reportes: DB.reportes, averias: DB.averias,
     soporte: DB.soporte, mensajes: DB.mensajes, reportesEliminados: DB.reportesEliminados, reuniones: DB.reuniones,
-    reunionesEliminadas: DB.reunionesEliminadas, cartasRecup: DB.cartasRecup, caract: DB.caract, conducta: DB.conducta, avisos: DB.avisos, accesos: DB.accesos, pausa: DB.pausa
+    reunionesEliminadas: DB.reunionesEliminadas, cartasRecup: DB.cartasRecup, caract: DB.caract, conducta: DB.conducta, avisos: DB.avisos, accesos: DB.accesos, pausa: DB.pausa, presencia: DB.presencia
   };
 }
 function adoptarDoc(doc){
@@ -1302,6 +1299,7 @@ function adoptarDoc(doc){
   DB.caract = doc.caract || {};
   DB.conducta = doc.conducta || {};
   DB.avisos = doc.avisos || [];
+  DB.presencia = (doc.presencia && typeof doc.presencia==='object') ? doc.presencia : {};
   DB.accesos = doc.accesos || [];
   DB.pausa = (doc.pausa && typeof doc.pausa==='object') ? doc.pausa : {activa:false};
   DB.ajustes = doc.ajustes || {nombreColegio:'Centro Escolar', lema:'Cuaderno digital', logo:''};
@@ -1393,6 +1391,7 @@ async function loadAll(){
   if(!DB.avisos) DB.avisos = [];
   if(!DB.accesos) DB.accesos = [];
   if(!DB.pausa) DB.pausa = {activa:false};
+  if(!DB.presencia) DB.presencia = {};
   if(!DB.notasTs) DB.notasTs = {};
   if(!DB.hojas) DB.hojas = {};
   if(!DB.bitacora) DB.bitacora = [];
@@ -2092,7 +2091,9 @@ async function pullCambios(silencioso){
   // cambio propio (quedó en camino a guardarse): en ese caso no hay que
   // pisarlo con lo que se acaba de traer del servidor.
   if(pendientes.length>0 || guardando) return false;
-  const cambio = JSON.stringify(docActual()) !== JSON.stringify(doc);
+  const sinPres = d=>JSON.stringify(Object.assign({}, d, {presencia:null}));
+  const cambio = sinPres(docActual()) !== sinPres(doc);
+  if(!cambio && doc.presencia){ DB.presencia = doc.presencia; }
   if(cambio){
     adoptarDoc(doc);
     if(currentUser){
@@ -2429,6 +2430,7 @@ function combinarDocs(local, nube, preferirNube){
       docentes: Object.assign({}, (local.conducta||{}).docentes||{}, (nube.conducta||{}).docentes||{})
     },
     pausa: nube.pausa || local.pausa || {activa:false},
+    presencia: Object.assign({}, local.presencia||{}, nube.presencia||{}),
     accesos: (nube.accesos||[]).concat((local.accesos||[]).filter(l=>!(nube.accesos||[]).some(x=>x.ts===l.ts&&x.id===l.id))).slice(-400),
     avisos: (nube.avisos||[]).concat((local.avisos||[]).filter(l=>!(nube.avisos||[]).some(x=>x.id===l.id))).slice(-40),
     bitacora: (nube.bitacora||[]).concat((local.bitacora||[]).filter(l=>!(nube.bitacora||[]).some(x=>x.ts===l.ts && x.userId===l.userId))).slice(-800),
@@ -3820,19 +3822,43 @@ function avisoMarcarVisto(id){
   }catch(e){}
 }
 function puedeEnviarAviso(){ return !!currentUser && !sesionEstudiante && isAdmin(currentUser); }
+let _avSel = {};
+const PRESENCIA_VIVA_MS = 150*1000;
+function conectadosAhora(){
+  const now = Date.now(), p = DB.presencia || {};
+  return (DB.docentes||[]).filter(d=>d.id!==currentUser.id && !esPropietario(d) && p[d.id] && Math.abs(now - p[d.id]) < PRESENCIA_VIVA_MS)
+    .sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre),'es'));
+}
+function avListaHTML(){
+  const c = conectadosAhora();
+  Object.keys(_avSel).forEach(id=>{ if(!c.some(d=>d.id===id)) delete _avSel[id]; });
+  if(!c.length) return '<p style="margin:0;color:var(--muted);font-size:14px;">Por ahora no hay nadie más conectado.</p>';
+  const todos = c.every(d=>_avSel[d.id]);
+  return `<label style="display:flex;gap:8px;align-items:center;font-weight:700;padding:4px 0;"><input type="checkbox" ${todos?'checked':''} onchange="avTodos(this.checked)"> Marcar a todos (${c.length})</label>` +
+    c.map(d=>`<label style="display:flex;gap:8px;align-items:center;padding:3px 0;"><input type="checkbox" ${_avSel[d.id]?'checked':''} onchange="avMarcar('${esc(d.id)}',this.checked)"> ${esc(d.nombre)}</label>`).join('');
+}
+function avMarcar(id,v){ if(v) _avSel[id]=true; else delete _avSel[id]; const l=document.getElementById('av_lista'); if(l) l.innerHTML = avListaHTML(); }
+function avTodos(v){ conectadosAhora().forEach(d=>{ if(v) _avSel[d.id]=true; else delete _avSel[d.id]; }); const l=document.getElementById('av_lista'); if(l) l.innerHTML = avListaHTML(); }
+setInterval(()=>{ const l=document.getElementById('av_lista'); if(l && !document.hidden) l.innerHTML = avListaHTML(); }, 8000);
+/* Presencia: cada minuto cada persona conectada se anota (el servidor pone la hora) para saber quién está conectado ahora */
+function latirPresencia(){
+  if(!currentUser || sesionEstudiante || vistaEstudiantePreview || document.hidden || (motor!=='compartido' && motor!=='nube')) return;
+  const id = currentUser.id;
+  try{ commit(d=>{ d.presencia = d.presencia || {}; d.presencia[id] = Date.now(); }); }catch(e){}
+}
+setInterval(latirPresencia, 60*1000);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) setTimeout(latirPresencia, 2000); });
+setTimeout(latirPresencia, 6000);
 function renderEnviarAviso(){
   if(!puedeEnviarAviso()) return '';
-  const docs = DB.docentes.filter(d=>d.id!==currentUser.id && !esPropietario(d)).sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre),'es'));
   const ult = (DB.avisos||[]).filter(a=>a.deId===currentUser.id).slice(-3).reverse();
-  const para = a=> a.para==='todos' ? 'todos' : ((DB.docentes.find(d=>d.id===a.para)||{}).nombre || 'una persona');
+  const nom = id=> (DB.docentes.find(d=>d.id===id)||{}).nombre || 'una persona';
+  const para = a=> a.para==='todos' ? 'todos' : (Array.isArray(a.para) ? a.para.map(nom).join(', ') : nom(a.para));
   return `<div class="card" id="av_card" style="margin-bottom:18px;">
     <h3 style="margin:0 0 4px;">📣 Enviar un aviso</h3>
-    <p style="margin:0 0 12px;color:var(--muted);font-size:14px;">Le aparece en una ventana a quien esté conectado y desaparece a los 10 minutos. Quien no esté conectado en ese tiempo no lo ve.</p>
+    <p style="margin:0 0 12px;color:var(--muted);font-size:14px;">Marca a quién se lo mandas: solo aparecen las personas que están conectadas en este momento. Les sale en una ventana y desaparece a los 10 minutos.</p>
+    <div id="av_lista" style="margin:0 0 12px;">${avListaHTML()}</div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;">
-      <select id="av_para" style="min-width:200px;">
-        <option value="todos">Todos los conectados</option>
-        ${docs.map(d=>`<option value="${esc(d.id)}">${esc(d.nombre)}</option>`).join('')}
-      </select>
       <textarea id="av_texto" maxlength="300" rows="2" placeholder="Escribe el aviso (máximo 300 letras)" style="flex:1 1 260px;min-width:0;"></textarea>
       <button class="btn btn-primary" onclick="enviarAviso()">Enviar aviso</button>
     </div>
@@ -3841,10 +3867,12 @@ function renderEnviarAviso(){
 }
 function enviarAviso(){
   if(!puedeEnviarAviso()) return;
-  const t = document.getElementById('av_texto'), p = document.getElementById('av_para');
+  const t = document.getElementById('av_texto');
   const texto = (t && t.value || '').trim().slice(0,300);
   if(!texto){ showToast('Escribe el aviso primero.'); return; }
-  const para = p ? p.value : 'todos';
+  const vivos = conectadosAhora().map(d=>d.id);
+  const para = vivos.filter(id=>_avSel[id]);
+  if(!para.length){ showToast('Marca al menos a una persona conectada.'); return; }
   const id = 'av'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   commit(doc=>{
     doc.avisos = doc.avisos || [];
@@ -3854,14 +3882,15 @@ function enviarAviso(){
   });
   avisoMarcarVisto(id);
   if(t) t.value = '';
-  showToast(para==='todos' ? 'Aviso enviado a todos los conectados.' : 'Aviso enviado.');
+  _avSel = {};
+  showToast(para.length===1 ? 'Aviso enviado.' : 'Aviso enviado a '+para.length+' personas.');
   render();
 }
 function revisarAvisos(){
   if(document.getElementById('terminos_live')) return;
   if(!currentUser || sesionEstudiante || !Array.isArray(DB.avisos) || document.getElementById('aviso_live')) return;
   const vistos = avisosVistos(), ahora = Date.now();
-  const a = DB.avisos.find(x=> x && x.deId!==currentUser.id && (x.para==='todos' || x.para===currentUser.id)
+  const a = DB.avisos.find(x=> x && x.deId!==currentUser.id && (x.para==='todos' || x.para===currentUser.id || (Array.isArray(x.para) && x.para.indexOf(currentUser.id)>=0))
     && ahora - x.ts < AVISO_VIDA_MS && ahora - x.ts > -60000 && !vistos[x.id]);
   if(!a) return;
   mostrarAvisoVentana(a, ()=>{ avisoMarcarVisto(a.id); setTimeout(revisarAvisos,300); }, false);
@@ -10113,6 +10142,70 @@ function volverASeguimiento(){
   render();
   guardarSesion();
 }
+/* ---- Cuentas repetidas: una persona con su cuenta de dominio (administrativa) y otra de docente con número (ej. ana.umanzor2) ---- */
+function cuentasRepetidas(){
+  const out = [];
+  (DB.docentes||[]).forEach(d=>{
+    if(esPropietario(d) || !d.usuario) return;
+    const m = /^(.*\D)(\d+)$/.exec(String(d.usuario)); if(!m) return;
+    const base = (DB.docentes||[]).find(x=>x.id!==d.id && !esPropietario(x) && x.usuario === m[1]);
+    if(base) out.push({dup:d, base});
+  });
+  return out;
+}
+function renderCuentasRepetidas(){
+  if(!currentUser || !(isAdmin(currentUser) || esPropietario(currentUser))) return '';
+  const r = cuentasRepetidas(); if(!r.length) return '';
+  return `<div class="card" id="rep_card" style="border-left:4px solid #d62839;">
+    <p class="card-title">🔗 Cuentas repetidas</p>
+    <p style="font-size:13.5px;color:var(--muted);margin:0 0 10px;">Estas personas tienen dos cuentas: la principal y otra con número. Al unirlas, las clases, la orientación, los reportes y las notas de conducta pasan a la cuenta principal, y la cuenta con número se elimina.</p>
+    ${r.map(x=>`<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line, #e3e7ef);">
+      <div style="flex:1 1 300px;font-size:14px;"><b>${esc(x.dup.nombre)}</b> <code>${esc(x.dup.usuario)}</code> → pasa a <b>${esc(x.base.nombre)}</b> <code>${esc(x.base.usuario)}</code><br><span style="color:var(--muted);font-size:13px;">${(x.dup.asignaciones||[]).length} clase(s) por pasar</span></div>
+      <button class="btn btn-sm btn-primary" onclick="unirCuentas('${esc(x.dup.id)}','${esc(x.base.id)}')">Unir cuentas</button></div>`).join('')}
+  </div>`;
+}
+function unirCuentas(origenId, destinoId){
+  const o = DB.docentes.find(x=>x.id===origenId), d = DB.docentes.find(x=>x.id===destinoId);
+  if(!o || !d || o.id===d.id) return;
+  if(currentUser && currentUser.id===o.id){ showToast('No puedes unir la cuenta que estás usando.'); return; }
+  if(esPropietario(o)){ showToast('Esa cuenta no se puede unir.'); return; }
+  if(!confirm('¿Unir "'+o.nombre+'" ('+o.usuario+') con "'+d.nombre+'" ('+d.usuario+')?\n\nTodo pasa a '+d.usuario+' y la cuenta '+o.usuario+' se elimina.')) return;
+  commit(doc=>{
+    const O = doc.docentes.find(x=>x.id===origenId), D = doc.docentes.find(x=>x.id===destinoId);
+    if(!O || !D) return;
+    D.asignaciones = D.asignaciones || [];
+    (O.asignaciones||[]).forEach(a=>{ if(!D.asignaciones.some(z=>z.grado===a.grado && z.asignaturaId===a.asignaturaId)) D.asignaciones.push(a); });
+    const ori = [];
+    [orientacionesDe(D), orientacionesDe(O)].forEach(l=>l.forEach(g=>{ if(ori.indexOf(g)<0) ori.push(g); }));
+    D.orientaciones = ori; delete D.orientacion;
+    (doc.reportes||[]).forEach(r=>{ if(r.docenteId===origenId) r.docenteId = destinoId; });
+    (doc.mensajes||[]).forEach(m=>{ if(m.deId===origenId) m.deId = destinoId; if(m.paraId===origenId) m.paraId = destinoId; });
+    (doc.bitacora||[]).forEach(b=>{ if(b.userId===origenId) b.userId = destinoId; });
+    const con = doc.conducta;
+    if(con){
+      if(con.notas){
+        Object.keys(con.notas).forEach(k=>{
+          const parts = k.split('|');
+          if(parts[parts.length-1] === origenId){
+            parts[parts.length-1] = destinoId;
+            const nk = parts.join('|');
+            if(con.notas[nk] === undefined) con.notas[nk] = con.notas[k];
+            delete con.notas[k];
+          }
+        });
+      }
+      if(con.docentes){
+        Object.keys(con.docentes).forEach(k=>{
+          if(k.endsWith('|'+origenId)){ const nk = k.slice(0, -origenId.length)+destinoId; if(con.docentes[nk] === undefined) con.docentes[nk] = con.docentes[k]; delete con.docentes[k]; }
+        });
+      }
+    }
+    const i = doc.docentes.findIndex(x=>x.id===origenId); if(i>=0) doc.docentes.splice(i,1);
+  });
+  registrar('Usuario', 'Unió la cuenta '+o.usuario+' con '+d.usuario);
+  showToast('Listo: las cuentas se unieron.');
+  render();
+}
 function renderDocentesBody(){
   const admins = DB.docentes.filter(t=>t.tipo==='admin');
   // Esta pantalla lista solo a quienes imparten clases. El resto del personal
@@ -10125,6 +10218,7 @@ function renderDocentesBody(){
   const otros = DB.docentes.filter(t=>t.tipo==='docente' && !esDocente(t)).length;
 
   return `
+  ${renderCuentasRepetidas()}
   <div class="card">
     <p class="card-title">Dominios de acceso total
       ${isAdmin(currentUser)?`<button class="btn btn-sm btn-primary" onclick="agregarDominio()">+ Agregar dominio</button>`:''}
@@ -11403,7 +11497,7 @@ function renderTarjetaClave(){
   const tiene = tieneClave(currentUser);
   const abierto = !!viewState.abrirClave;
   return `
-  <div class="card">
+  <div class="card" id="mi_clave_card">
     <p class="card-title">
       Mi contraseña
       <span class="pill ${tiene?'pill-primary':'pill-muted'}">${tiene?'Definida':'Sin contraseña'}</span>
