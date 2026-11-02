@@ -4261,7 +4261,7 @@ const BIENVENIDAS = [
  "Enseñar es un trabajo del corazón, y el tuyo se nota. Si esta semana sientes el peso de todo lo que cargas, recuerda que no estás solo(a): somos un equipo y nos cuidamos. 🌟💛",
  "Cada estudiante que sonríe porque lo entendiste, cada tarea revisada con cariño, cuenta. Gracias por todo lo que das. Eres valioso(a) para nuestra escuela. 🌈💞",
  "Descansar también es parte de enseñar bien. Respira, toma agua, date un momento. Lo estás haciendo mejor de lo que crees, y aquí te queremos mucho. 🍎📚",
- "Hoy te recordamos que eres importante. No solo por lo que enseñas, sino por quien eres. Gracias por poner tu corazón en nuestros estudiantes. 🌸🫶",
+ "Hoy te recordamos que eres importante. No solo por lo que enseñas, sino por quien eres. Gracias por poner tu corazón en nuestros estudiantes. 🌸💙",
  "Sabemos que hay semanas largas. Lo que haces con tanto esfuerzo es admirable. Gracias por no rendirte y por estar siempre para nuestros niños y jóvenes. ☀️💪",
  "Eres parte de la historia de esta escuela. Detrás de cada logro de nuestros estudiantes hay una maestra o un maestro que creyó en ellos. Gracias por creer. 🎉💙",
  "Un salón se llena de vida gracias a quien lo guía. Tú le das esa vida. Gracias por tu entrega y por hacernos sentir orgullosos de trabajar contigo. 🦋🌼",
@@ -4273,7 +4273,7 @@ const BIENVENIDAS = [
  "Reconocemos tu esfuerzo y también tu cansancio. Ambos son señal de que te importa lo que haces. Gracias por importarte tanto. ¡Tú puedes con esta semana! 🌟💛",
  "Gracias por ser ejemplo para nuestros estudiantes. Lo que ven en ti —esfuerzo, respeto y cariño— se les queda para siempre. Eres muy querido(a) aquí. 🌈💞",
  "No hay trabajo pequeño cuando se hace con amor. Y tú enseñas con mucho amor. Gracias por ser parte de esta escuela y por hacerla un lugar mejor. 🍎📚",
- "Esta semana recuerda celebrar lo pequeño: un estudiante que mejoró, una clase que salió bien, una sonrisa. Tú lo hiciste posible. ¡Gracias, de corazón! 🌸🫶",
+ "Esta semana recuerda celebrar lo pequeño: un estudiante que mejoró, una clase que salió bien, una sonrisa. Tú lo hiciste posible. ¡Gracias, de corazón! 🌸💙",
  "Somos una comunidad y juntos llegamos más lejos. Gracias por sumar tu talento y tu cariño. Si hoy necesitas un respiro, tómalo: aquí te cuidamos. ☀️💪",
  "Detrás de cada nota, cada boleta y cada reporte hay horas de trabajo y mucho corazón. Gracias por hacerlo con tanta responsabilidad. Eres muy valioso(a). 🎉💙",
  "Sabemos que enseñar cansa el cuerpo y el alma. Por eso queremos recordarte que tu labor tiene sentido y que muchas vidas están mejor gracias a ti. 🦋🌼",
@@ -4285,7 +4285,7 @@ const BIENVENIDAS = [
  "Eres más importante de lo que imaginas. Cuando tú estás bien, el salón entero lo siente. Cuídate esta semana; nosotros te cuidamos a ti. 🌟💛",
  "Gracias por estar, por intentarlo de nuevo cuando es difícil y por creer en cada estudiante. Esa perseverancia es un regalo para nuestra escuela. 🌈💞",
  "Una escuela es tan buena como las personas que la forman. Y las personas que la forman, como tú, son lo mejor que tenemos. Gracias por tanto. 🍎📚",
- "Si hoy llegas con el cansancio a cuestas, lo entendemos. Lo que haces es grande. Respira: no tienes que poder con todo tú solo(a). Somos equipo. 🌸🫶",
+ "Si hoy llegas con el cansancio a cuestas, lo entendemos. Lo que haces es grande. Respira: no tienes que poder con todo tú solo(a). Somos equipo. 🌸💙",
  "Gracias por compartir tu tiempo, tu conocimiento y tu corazón. Cada día que enseñas, siembras algo bonito. ¡Estamos orgullosos de tenerte aquí! ☀️💪",
  "Tu esfuerzo no pasa desapercibido. Es parte de lo que hace especial a esta escuela. Gracias por dar tanto y por ser parte de nuestra familia. 🎉💙",
  "Esta semana recuerda que enseñar también es aprender, y que tú nos enseñas mucho a todos. Gracias por tu ejemplo y por tu cariño. 🦋🌼",
@@ -4310,9 +4310,11 @@ function bienvenidaPropuesta(lunes){
   const extra = (viewState.bienvOtro && viewState.bienvOtro[lunes]) || 0;
   return BIENVENIDAS[(((base + extra) % BIENVENIDAS.length) + BIENVENIDAS.length) % BIENVENIDAS.length];
 }
+/* Algunos equipos no muestran emoticones nuevos (salen como un cuadro): se cambian por uno que se ve en todos */
+function emojiSeguro(t){ return String(t||'').replace(/\u{1FAF6}/gu,'💙'); }
 function mensajeSemanalActual(){
   const ap = ((DB.ajustes||{}).bienvenidaSemanal||{})[lunesDeSemana(new Date())];
-  return ap ? ap.texto : '';
+  return ap ? emojiSeguro(ap.texto) : '';
 }
 function puedeAprobarBienvenida(){ return !!currentUser && !sesionEstudiante && puedeCambiarVista(currentUser) && !propEnVistaDocente(currentUser); }
 function bienvenidaOtro(lunes){ if(!viewState.bienvOtro) viewState.bienvOtro = {}; viewState.bienvOtro[lunes] = (viewState.bienvOtro[lunes]||0) + 1; render(); }
@@ -4337,7 +4339,7 @@ function renderAprobarBienvenidas(){
     const hecho = ap[k];
     if(hecho) return `<div style="margin-bottom:12px; padding:12px 14px; border:1px solid #BFE0C8; background:#EEF8F1; border-radius:10px;">
       <div style="font-size:12.5px; font-weight:700; color:#256B3D; margin-bottom:4px;">✔ ${titulo} (${nombreSemana(k)}) — aprobado</div>
-      <div style="font-size:13.5px; line-height:1.5; white-space:pre-wrap;">${esc(hecho.texto)}</div>
+      <div style="font-size:13.5px; line-height:1.5; white-space:pre-wrap;">${esc(emojiSeguro(hecho.texto))}</div>
       <button class="btn btn-sm" style="margin-top:8px;" onclick="bienvenidaCambiar('${k}')">Cambiar este mensaje</button></div>`;
     return `<div style="margin-bottom:12px;">
       <div style="font-size:13px; font-weight:700; margin-bottom:6px;">${titulo} (${nombreSemana(k)}) — por aprobar</div>
@@ -4448,10 +4450,10 @@ function renderSeguridadAcceso(){
     <p class="nota-chica" style="margin:8px 0 0;">Con el Apps Script nuevo, nadie puede ver ni guardar datos sin iniciar sesión, y cada docente solo recibe las notas, hojas y boletas de sus grados (los reportes y la conducta los ven todos). Después de 5 contraseñas incorrectas, ese usuario espera 15 minutos. La sesión dura 14 días y se cierra sola si le cambian la contraseña.</p></div>`;
 }
 function mensajeBienvenidaDe(u){
-  if(u && u.mensajeBienvenidaPersonal) return u.mensajeBienvenidaPersonal;
+  if(u && u.mensajeBienvenidaPersonal) return emojiSeguro(u.mensajeBienvenidaPersonal);
   const sem = mensajeSemanalActual();
   if(sem) return sem;
-  return (DB.ajustes && DB.ajustes.mensajeBienvenida) || '';
+  return emojiSeguro((DB.ajustes && DB.ajustes.mensajeBienvenida) || '');
 }
 function huellaMensaje(txt){
   let h = 5381;
@@ -10641,7 +10643,7 @@ const EMOJI_CATEGORIAS = [
   {id:"caritas", nombre:"Caritas", icono:"😀", lista:["😀", "😃", "😄", "😁", "😆", "😅", "🤣", "😂", "🙂", "🙃", "😉", "😊", "😇", "🥰", "😍", "🤩", "😘", "😗", "😚", "😙", "😋", "😛", "😜", "🤪", "😝", "🤑", "🤗", "🤭", "🤫", "🤔", "🤐", "🤨", "😐", "😑", "😶", "😏", "😒", "🙄", "😬", "🤥", "😌", "😔", "😪", "🤤", "😴", "😷", "🤒", "🤕", "🤢", "🤮", "🤧", "🥵", "🥶", "🥴", "😵", "🤯", "🤠", "🥳", "😎", "🤓", "🧐", "😕", "🙁", "☹️", "😮", "😯", "😲", "😳", "🥺", "😦", "😧", "😨", "😰", "😥", "😢", "😭", "😱", "😖", "😣", "😞", "😓", "😩", "😫", "🥱", "😤", "😡", "😠", "🤬", "😈", "👿", "💀", "☠️", "💩", "🤡", "👹", "👺", "👻", "👽", "🤖", "😺", "😸", "😹", "😻", "😼", "😽", "🙀", "😿", "😾"]},
   {id:"gestos", nombre:"Gestos y personas", icono:"👋", lista:["👋", "🤚", "🖐️", "✋", "🖖", "👌", "🤏", "✌️", "🤞", "🤟", "🤘", "🤙", "👈", "👉", "👆", "🖕", "👇", "☝️", "👍", "👎", "✊", "👊", "🤛", "🤜", "👏", "🙌", "👐", "🤲", "🙏", "✍️", "💅", "🤳", "💪", "👂", "👃", "🧠", "👀", "👄", "💋", "👶", "🧒", "👦", "👧", "🧑", "👨", "🧔", "👩", "🧓", "👴", "👵", "🎓", "👮", "🕵️", "💂", "👷", "🤴", "👸", "👳", "👲", "🧕", "🤵", "👰", "🤰", "🤱", "👼", "🎅", "🦸", "🦹", "🧙", "🧚", "🧛", "🧟"]},
   {id:"animales", nombre:"Animales y naturaleza", icono:"🐶", lista:["🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯", "🦁", "🐮", "🐷", "🐽", "🐸", "🐵", "🙈", "🙉", "🙊", "🐒", "🐔", "🐧", "🐦", "🐤", "🦆", "🦅", "🦉", "🦇", "🐺", "🐗", "🐴", "🦄", "🐝", "🐛", "🦋", "🐌", "🐞", "🐜", "🕷️", "🐢", "🐍", "🦎", "🦖", "🦕", "🐙", "🦑", "🦀", "🐡", "🐠", "🐟", "🐬", "🐳", "🐋", "🦈", "🐊", "🐅", "🦓", "🦍", "🐘", "🦒", "🐪", "🐫", "🦌", "🐕", "🐩", "🐈", "🐓", "🦃", "🕊️", "🐇", "🐿️", "🦔", "🌵", "🎄", "🌲", "🌳", "🌴", "🌱", "🌿", "☘️", "🍀", "🍃", "🍂", "🍁", "🍄", "🌾", "💐", "🌷", "🌹", "🌺", "🌸", "🌼", "🌻", "🌞", "🌝", "🌛", "🌙", "🌎", "⭐", "🌟", "✨", "⚡", "☄️", "🔥", "🌈", "☀️", "⛅", "☁️", "⛈️", "❄️", "☃️", "💧", "💦", "☔"]},
-  {id:"comida", nombre:"Comida y bebida", icono:"🍔", lista:["🍏", "🍎", "🍐", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🫐", "🍈", "🍒", "🍑", "🥭", "🍍", "🥥", "🥝", "🍅", "🍆", "🥑", "🥦", "🥬", "🥒", "🌶️", "🌽", "🥕", "🧄", "🧅", "🥔", "🍠", "🥐", "🥯", "🍞", "🥖", "🧀", "🥚", "🍳", "🥞", "🧇", "🥓", "🥩", "🍗", "🍖", "🌭", "🍔", "🍟", "🍕", "🥪", "🌮", "🌯", "🥗", "🍝", "🍜", "🍲", "🍛", "🍣", "🍱", "🥟", "🍤", "🍙", "🍚", "🍘", "🥠", "🍢", "🍡", "🍧", "🍨", "🍦", "🥧", "🧁", "🍰", "🎂", "🍮", "🍭", "🍬", "🍫", "🍿", "🍩", "🍪", "🌰", "🥜", "🍯", "🥛", "🍼", "☕", "🍵", "🧃", "🥤", "🧋", "🍶", "🍺", "🍻", "🥂", "🍷", "🥃", "🍸", "🍹", "🍾"]},
+  {id:"comida", nombre:"Comida y bebida", icono:"🍔", lista:["🍏", "🍎", "🍐", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🍈", "🍒", "🍑", "🥭", "🍍", "🥥", "🥝", "🍅", "🍆", "🥑", "🥦", "🥬", "🥒", "🌶️", "🌽", "🥕", "🧄", "🧅", "🥔", "🍠", "🥐", "🥯", "🍞", "🥖", "🧀", "🥚", "🍳", "🥞", "🧇", "🥓", "🥩", "🍗", "🍖", "🌭", "🍔", "🍟", "🍕", "🥪", "🌮", "🌯", "🥗", "🍝", "🍜", "🍲", "🍛", "🍣", "🍱", "🥟", "🍤", "🍙", "🍚", "🍘", "🥠", "🍢", "🍡", "🍧", "🍨", "🍦", "🥧", "🧁", "🍰", "🎂", "🍮", "🍭", "🍬", "🍫", "🍿", "🍩", "🍪", "🌰", "🥜", "🍯", "🥛", "🍼", "☕", "🍵", "🧃", "🥤", "🧋", "🍶", "🍺", "🍻", "🥂", "🍷", "🥃", "🍸", "🍹", "🍾"]},
   {id:"actividades", nombre:"Actividades", icono:"⚽", lista:["⚽", "🏀", "🏈", "⚾", "🥎", "🎾", "🏐", "🏉", "🎱", "🪀", "🏓", "🏸", "🏒", "🏑", "🥍", "🏏", "⛳", "🪁", "🏹", "🎣", "🥊", "🥋", "🎽", "🛹", "🛷", "⛸️", "🎿", "⛷️", "🏂", "🏋️", "🤼", "🤸", "🤺", "🏌️", "🏇", "🧘", "🏄", "🏊", "🚣", "🧗", "🚴", "🏆", "🥇", "🥈", "🥉", "🏅", "🎖️", "🎗️", "🎫", "🎪", "🤹", "🎭", "🎨", "🎬", "🎤", "🎧", "🎼", "🎹", "🥁", "🎷", "🎺", "🎸", "🎻", "🎲", "🎯", "🎳", "🎮", "🎰", "🧩"]},
   {id:"viajes", nombre:"Viajes y lugares", icono:"✈️", lista:["🚗", "🚕", "🚙", "🚌", "🚎", "🏎️", "🚓", "🚑", "🚒", "🚐", "🚚", "🚛", "🚜", "🛵", "🏍️", "🚲", "🛴", "🚨", "🚡", "🚠", "🚃", "🚄", "🚅", "🚈", "🚂", "🚆", "🚇", "🚊", "✈️", "🛫", "🛬", "🚀", "🛸", "🚁", "⛵", "🚤", "🛳️", "⛴️", "🚢", "⚓", "🚧", "🚦", "🚥", "🗺️", "🗽", "🗼", "🏰", "🎡", "🎢", "🎠", "⛲", "🏖️", "🏝️", "🏜️", "🌋", "⛰️", "🏔️", "🏕️", "⛺", "🏠", "🏡", "🏢", "🏬", "🏥", "🏦", "🏨", "🏫", "⛪", "🕌", "🌇", "🌆", "🏙️", "🌃", "🌉"]},
   {id:"objetos", nombre:"Objetos y símbolos", icono:"💡", lista:["💡", "🔦", "📔", "📖", "📚", "📓", "📰", "🔖", "🏷️", "💰", "💵", "💳", "🧾", "💎", "🔧", "🔨", "🛠️", "🔩", "⚙️", "⛓️", "🔫", "💣", "🔪", "🗡️", "🛡️", "🚬", "🔮", "📿", "🔭", "🔬", "💊", "💉", "🩹", "🩺", "🚪", "🛏️", "🛋️", "🪑", "🚽", "🚿", "🛁", "🧴", "🧹", "🧺", "🧻", "🧼", "🛒", "🚫", "❌", "⭕", "🛑", "⛔", "💯", "💢", "💤", "💬", "💭", "❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", "❣️", "💕", "💞", "💓", "💗", "💖", "💘", "💝", "💟", "✝️", "☪️", "🕉️", "☸️", "✡️", "☯️", "⛎", "✅", "✔️", "☑️", "🔴", "🟠", "🟡", "🟢", "🔵", "🟣", "🟤", "⚫", "⚪", "⬛", "⬜", "🔶", "🔷", "🔸", "🔹"]},
