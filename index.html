@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Escuela Cristiana Cristo a las Naciones</title>
+<title>Cuaderno digital</title>
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png">
-<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icono-192.png">
+<link rel="icon" id="favicon" href="data:,">
 <meta name="theme-color" content="#16233F">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -554,7 +554,7 @@ if('serviceWorker' in navigator){
    Cada entrega lleva un número de versión. Al abrir la plataforma (y cada cierto rato, o al volver a la
    pestaña) se compara con la versión publicada; si es distinta, aparece un aviso discreto abajo.
    Si es la misma, no pasa nada. Súbele el número cada vez que se publique una actualización. */
-const APP_VERSION = '2026-11-02-1610';
+const APP_VERSION = '2026-11-02-1850';
 let _avisoVersionMostrado = false, _ultimaRevisionVersion = 0;
 async function revisarVersionNueva(){
   if(_avisoVersionMostrado) return;
@@ -596,7 +596,10 @@ setInterval(revisarVersionNueva, 15*60*1000);
    Cada versión nueva agrega sus novedades en NOVEDADES (con la versión en que salió). Al entrar, a cada persona se le muestran
    solo las novedades posteriores a la última versión que vio, y que le tocan según su rol. Se guarda por usuario en este navegador. */
 const NOVEDADES = [
-  {v:'2026-11-02-1610', items:[
+  {v:'2026-11-02-1850', items:[
+    {t:'Ver como docente', x:'En el Panel principal hay una tarjeta para ver, como lo ven los docentes, los términos y condiciones, el cambio de contraseña, un aviso y la pantalla de mantenimiento. Es solo una vista previa: no guarda nada.', panel:'panel', target:'#vp_card', para:'admin'},
+    {t:'Contraseña propia', x:'Si tu contraseña era la que se entrega al inicio, al entrar te pedimos crear una propia, con mínimo 6 caracteres: números, mayúscula, minúscula y un carácter especial.', panel:null, target:'#btn_novedades', abrirMenu:true, para:'todos'},
+    {t:'Pausar la plataforma', x:'En el Panel principal puedes pausar la plataforma para todos, menos para Dirección y Mantenimiento, mientras haces cambios. Escribe un mensaje, toca "Pausar para todos" y, cuando termines, "Reanudar".', panel:'panel', target:'#pausa_card', para:'admin'},
     {t:'Términos y condiciones', x:'Al entrar por primera vez te pedimos leer y aceptar los términos y condiciones de uso y confidencialidad de la información. Se acepta una sola vez.', panel:null, target:'#btn_novedades', abrirMenu:true, para:'todos'},
     {t:'Avisos momentáneos', x:'En el Panel principal puedes escribir un aviso corto y mandarlo a todas las personas que estén conectadas, o solo a una. Les aparece en una ventana y desaparece cuando lo leen o a los 10 minutos.', panel:'panel', target:'#av_card', para:'admin'}
   ]},
@@ -609,6 +612,7 @@ const NOVEDADES = [
     {t:'Estudiantes retirados', x:'Con Editar puedes indicar hasta qué período estuvo un estudiante. Sus notas anteriores se conservan, y desde el período siguiente ya no aparece en las listas.', panel:'estudiantes', target:'button[onclick^="openStudentModal(\'"]', para:'gestion'},
     {t:'Cambiar de docente en una materia', x:'Si asignas una materia que ya tenía otra maestra, pasa a la nueva. En Editar puedes activar "Proteger notas anteriores" para que la docente nueva no cambie las notas que ya estaban.', panel:'docentes', target:'button[onclick^="openTeacherModal(\'"]', para:'admin'},
     {t:'Reading en Inglés', x:'En Calificaciones de Inglés, desde P2, hay una columna Reading que vale el 10% de la nota.', panel:'calificaciones', target:'.ledger', para:'todos'},
+    {t:'Indicador de sincronización', x:'Abajo a la izquierda, junto a tu foto, ves el estado de tus cambios. Con ✔ en verde y "Sincronizado", todo está guardado. Con ✖ en rojo, todavía hay cambios sin enviar: espera unos segundos o toca ahí para reintentar. Antes de cerrar la plataforma, revisa que se vea el ✔.', panel:null, target:'#sync-indicator', para:'todos'},
     {t:'Aviso de versión nueva', x:'Cuando haya una versión nueva te saldrá un aviso pequeño abajo a la derecha. Toca "Actualizar" para verla. Este recorrido lo abres otra vez con el botón "✨ Novedades" del menú.', panel:null, target:'#btn_novedades', abrirMenu:true, para:'todos'}
   ]}
 ];
@@ -714,16 +718,19 @@ function novSusto(){
   /* "Código en vivo" con errores: líneas verdes y rojas que van subiendo durante 5 segundos */
   const verde = ['const DB = await leerDoc();','for(let i=0;i<estudiantes.length;i++){','  commit(d=>{ d.notas[id] = null; });',"fetch('/exec?accion=guardar',{method:'POST'})",'SELECT * FROM docentes;','sudo chmod 777 /boletas','Descifrando notas.......... 47%','Accediendo a base_de_datos... [OK]','>> acceso_concedido = true','Inyectando codigo...','git push --force origin main','while(true){ borrarTodo(); }','} catch(e){ console.log(e.stack); }','0x7FFE4A21  0xDEADBEEF  0xC0FFEE','password: ********','npm run reiniciar-plataforma'];
   const rojo = ['ERROR: conexion perdida con el servidor','FATAL: no se pudo leer calificaciones.json','!! ERROR 503: servicio no disponible','Uncaught TypeError: notas is undefined','ERROR: boletas corrompidas','CRITICAL: sincronizacion fallida (x)','Segmentation fault (core dumped)','ERROR: acceso denegado a la base de datos','!!! SISTEMA INESTABLE !!!','Exception in thread "main" java.lang.NullPointerException'];
-  const cont = o.firstChild; let nLin = 0;
+  const cont = o.firstChild; let nLin = 0; const t0 = Date.now();
   const tic = setInterval(()=>{
     if(!document.getElementById('nov_susto')){ clearInterval(tic); return; }
+    if(Date.now() - t0 < 3000) return;   /* primero, 3 segundos de pantalla totalmente negra */
+    for(let k=0;k<2;k++){
     const r = Math.random() < 0.4, lista = r ? rojo : verde;
     const d = document.createElement('div');
     d.style.color = r ? '#ff4d5e' : (Math.random()<0.15 ? '#ffffff' : '#33ff66');
     d.textContent = ' '.repeat(r ? 0 : Math.floor(Math.random()*4)*2) + lista[Math.floor(Math.random()*lista.length)];
     cont.appendChild(d); nLin++;
     while(cont.children.length > 40) cont.removeChild(cont.firstChild);
-  }, 70);
+    }
+  }, 25);
   setTimeout(()=>{
     clearInterval(tic);
     if(!document.getElementById('nov_susto')) return;
@@ -733,7 +740,7 @@ function novSusto(){
       '<button type="button" id="nov_s_btn" style="visibility:hidden; border:0; background:#2E5C9A; color:#fff; border-radius:10px; padding:12px 22px; font-size:16px; font-weight:700; cursor:pointer;" onclick="novSustoIr(this)">✨ Dar un recorrido por las actualizaciones</button>'+(puedeCambiarVista(currentUser)?'<div style="margin-top:14px;"><button type="button" id="nov_s_stop" style="visibility:hidden; border:0; background:none; color:#667489; text-decoration:underline; cursor:pointer; font-size:13px;" onclick="novDetener()">Dejar de aparecer</button></div>':'')+'</div>';
     setTimeout(()=>{ const i=document.getElementById('nov_s_img'); if(i) i.style.visibility='visible'; }, 1000);
     setTimeout(()=>{ const bt=document.getElementById('nov_s_btn'); if(bt) bt.style.visibility='visible'; const st2=document.getElementById('nov_s_stop'); if(st2) st2.style.visibility='visible'; }, 1600);
-  }, 5000);
+  }, 8000);
 }
 function novSustoIr(btn){
   const r = btn.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2;
@@ -978,6 +985,7 @@ async function loginServidor(usuario, clave, propietaria){
     headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({usuario, clave, propietaria:!!propietaria})}), 15000);
   if(!r.ok) throw new Error('HTTP ' + r.status);
   const d = JSON.parse(await r.text());
+  if(d && d.pausa === true){ mostrarPausa(d.mensaje); return {pausa:true}; }
   if(d && d.bloqueado) return {bloqueado:true};
   if(!d || !d.ok || !d.tk) return null;
   guardarToken(d.tk);
@@ -993,6 +1001,7 @@ async function cargarPublico(){
     if(d.nombreColegio) DB.ajustes.nombreColegio = d.nombreColegio;
     if(d.logo) DB.ajustes.logo = d.logo;
     if(d.anio) DB.ajustes.anio = d.anio;
+    PAUSA_PUBLICA = (d.pausa && d.pausa.activa) ? d.pausa : null;
   }catch(e){}
 }
 
@@ -1019,6 +1028,7 @@ async function nubeLeer(){
   const txt = await r.text();
   if(!txt || txt.trim()==='' || txt.trim()==='null') return null;
   const doc = JSON.parse(txt);
+  if(doc && doc.pausa === true){ mostrarPausa(doc.mensaje); throw new Error('pausa'); }
   if(doc && doc.sinAutorizacion){           // el Apps Script no reconoció el token
     if(servidorSeguro){ sesionVencida(); throw new Error('sinToken'); }
     throw new Error('sin autorización — revisa que el código del Apps Script esté actualizado');
@@ -1038,6 +1048,7 @@ async function nubeEscribir(valor){
     headers:{'Content-Type':'text/plain;charset=utf-8'}, body: valor}), 15000);
   if(!r.ok) throw new Error('HTTP ' + r.status);
   const resp = await r.text();
+  if(resp && resp.indexOf('"pausa":true') >= 0){ let m = ''; try{ m = JSON.parse(resp).mensaje; }catch(e){} mostrarPausa(m); throw new Error('pausa'); }
   if(resp && resp.indexOf('sinAutorizacion') >= 0){
     if(servidorSeguro){ sesionVencida(); throw new Error('sinToken'); }
     throw new Error('sin autorización — revisa que el código del Apps Script esté actualizado');
@@ -1046,6 +1057,7 @@ async function nubeEscribir(valor){
     versionRechazada = true;
     throw new Error('version');
   }
+  if(resp && resp.indexOf('"tk"') >= 0){ try{ const j = JSON.parse(resp); if(j && j.tk) guardarToken(j.tk); }catch(e){} }   // cambió su contraseña: el servidor entrega la llave nueva
   return true;
 }
 /* Pide al Apps Script SOLO los datos de un estudiante (las suyas y las de su
@@ -1060,6 +1072,7 @@ async function nubeLeerEstudiante(usuario, claveHash){
   const txt = await r.text();
   if(!txt) return null;
   const datos = JSON.parse(txt);
+  if(datos && datos.pausa === true){ mostrarPausa(datos.mensaje); throw new Error('pausa'); }
   if(datos && datos.sinAutorizacion) throw new Error('sin autorización — revisa el código del Apps Script');
   if(!datos || datos.error) return null;
   return datos;
@@ -1259,7 +1272,7 @@ function docActual(){
     observaciones: DB.observaciones, ajustes: DB.ajustes, rubros: DB.rubros,
     boletaDatos: DB.boletaDatos, hojas: DB.hojas, bitacora: DB.bitacora, reportes: DB.reportes, averias: DB.averias,
     soporte: DB.soporte, mensajes: DB.mensajes, reportesEliminados: DB.reportesEliminados, reuniones: DB.reuniones,
-    reunionesEliminadas: DB.reunionesEliminadas, cartasRecup: DB.cartasRecup, caract: DB.caract, conducta: DB.conducta, avisos: DB.avisos, accesos: DB.accesos
+    reunionesEliminadas: DB.reunionesEliminadas, cartasRecup: DB.cartasRecup, caract: DB.caract, conducta: DB.conducta, avisos: DB.avisos, accesos: DB.accesos, pausa: DB.pausa
   };
 }
 function adoptarDoc(doc){
@@ -1290,6 +1303,7 @@ function adoptarDoc(doc){
   DB.conducta = doc.conducta || {};
   DB.avisos = doc.avisos || [];
   DB.accesos = doc.accesos || [];
+  DB.pausa = (doc.pausa && typeof doc.pausa==='object') ? doc.pausa : {activa:false};
   DB.ajustes = doc.ajustes || {nombreColegio:'Centro Escolar', lema:'Cuaderno digital', logo:''};
   if(DB.ajustes.fraseSaludo === undefined) DB.ajustes.fraseSaludo = 'recuerda que lo haces increíble';
   if(DB.ajustes.mensajeBienvenida === undefined) DB.ajustes.mensajeBienvenida = '';
@@ -1378,6 +1392,7 @@ async function loadAll(){
   if(!DB.conducta) DB.conducta = {};
   if(!DB.avisos) DB.avisos = [];
   if(!DB.accesos) DB.accesos = [];
+  if(!DB.pausa) DB.pausa = {activa:false};
   if(!DB.notasTs) DB.notasTs = {};
   if(!DB.hojas) DB.hojas = {};
   if(!DB.bitacora) DB.bitacora = [];
@@ -2070,7 +2085,8 @@ async function pullCambios(silencioso){
   if(motor !== 'compartido' && motor !== 'nube') return false;   // sin lugar común no hay nada que traer
   if(servidorSeguro && (!TOKEN || !currentUser || sesionEstudiante)) return false;   // sin llave no se pide nada
   if(pendientes.length>0 || guardando) return false;
-  const doc = await leerDoc();
+  let doc;
+  try{ doc = await leerDoc(); }catch(e){ if(e && e.message === 'pausa') return false; throw e; }   // en pausa: la pantalla de pausa ya se mostró
   if(!doc){ setSyncStatus('error'); return false; }
   // Puede que, mientras se esperaba la respuesta, el usuario haya hecho un
   // cambio propio (quedó en camino a guardarse): en ese caso no hay que
@@ -2412,6 +2428,7 @@ function combinarDocs(local, nube, preferirNube){
       obs: Object.assign({}, (local.conducta||{}).obs||{}, (nube.conducta||{}).obs||{}),
       docentes: Object.assign({}, (local.conducta||{}).docentes||{}, (nube.conducta||{}).docentes||{})
     },
+    pausa: nube.pausa || local.pausa || {activa:false},
     accesos: (nube.accesos||[]).concat((local.accesos||[]).filter(l=>!(nube.accesos||[]).some(x=>x.ts===l.ts&&x.id===l.id))).slice(-400),
     avisos: (nube.avisos||[]).concat((local.avisos||[]).filter(l=>!(nube.avisos||[]).some(x=>x.id===l.id))).slice(-40),
     bitacora: (nube.bitacora||[]).concat((local.bitacora||[]).filter(l=>!(nube.bitacora||[]).some(x=>x.ts===l.ts && x.userId===l.userId))).slice(-800),
@@ -3369,10 +3386,27 @@ function showToast(msg){
    le aparece en una ventana (se revisa cada pocos segundos tras sincronizar). Dura 10 minutos y cada
    persona lo ve una sola vez. Solo envían los administradores; los docentes reciben. */
 
+function agregarCierrePrevia(d){
+  const b = document.createElement('button');
+  b.type = 'button'; b.textContent = '✕ Cerrar vista previa';
+  b.style.cssText = 'position:fixed;top:12px;right:12px;z-index:10400;background:#d62839;color:#fff;border:0;border-radius:99px;padding:9px 16px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3);';
+  b.onclick = ()=>{ d.remove(); b.remove(); const cu = document.getElementById('pausa_cuenta'); if(cu) cu.remove(); _pausaCuentaActiva = false; };
+  document.body.appendChild(b);
+  const obs = new MutationObserver(()=>{ if(!document.body.contains(d)){ b.remove(); obs.disconnect(); } });
+  obs.observe(document.body, {childList:true});
+}
+/* El logo del colegio ya no va escrito en el código público: llega del servidor (Apps Script) y se pone como icono de la pestaña */
+let _faviconPuesto = '';
+function ponerFavicon(){
+  const logo = DB.ajustes && DB.ajustes.logo;
+  if(!logo || logo === _faviconPuesto) return;
+  const l = document.getElementById('favicon'); if(!l) return;
+  l.href = logo; _faviconPuesto = logo;
+}
 /* ===== Acuerdo de uso y confidencialidad =====
    Se pide una sola vez a cada persona de la institución (docentes y administradores). Queda guardado en su
    cuenta (terminos:{v,ts}) y también en este navegador. Si cambia el texto, se sube TERMINOS_V y se pide de nuevo. */
-const TERMINOS_V = '2026-11-02h';
+const TERMINOS_V = '2026-11-02i';
 /* Se vuelve a pedir cuando: (1) se entra desde un dispositivo o navegador nuevo, (2) cambia el nombre de usuario,
    (3) se crea el usuario (aún no tiene registro), o (4) cambia la versión del texto. La aceptación de cada equipo
    se guarda en este navegador junto con el usuario con que se aceptó; en la cuenta queda además el historial. */
@@ -3408,9 +3442,9 @@ function equipoCorto(ua){
 function renderRegistroTerminos(){
   if(!puedeEnviarAviso()) return '';
   const filas = [];
-  DB.docentes.forEach(d=>(d.terminosLog||[]).forEach(r=>filas.push({d, r})));
+  DB.docentes.filter(d=>!esPropietario(d)).forEach(d=>(d.terminosLog||[]).forEach(r=>filas.push({d, r})));
   filas.sort((a,b)=>b.r.ts-a.r.ts);
-  const sin = DB.docentes.filter(d=>!(d.terminosLog||[]).some(r=>r.v===TERMINOS_V) && String(d.usuario||'').trim());
+  const sin = DB.docentes.filter(d=>!esPropietario(d) && !(d.terminosLog||[]).some(r=>r.v===TERMINOS_V) && String(d.usuario||'').trim());
   const f = ts=>new Date(ts).toLocaleString('es',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
   return `<details class="card" id="reg_terminos" style="margin-bottom:18px;">
     <summary style="cursor:pointer;font-weight:700;font-size:17px;">🧾 Registro de aceptación de términos <span style="font-weight:400;color:var(--muted);font-size:14px;">(${filas.length} registros${sin.length?`, ${sin.length} sin aceptar la versión actual`:''})</span></summary>
@@ -3422,8 +3456,9 @@ function renderRegistroTerminos(){
     </table></div>
   </details>`;
 }
-function revisarTerminos(){
-  if(!currentUser || sesionEstudiante || document.getElementById('terminos_live') || terminosAceptados()) return;
+function revisarTerminos(previa){
+  previa = (previa === true);
+  if(!currentUser || sesionEstudiante || document.getElementById('terminos_live') || (!previa && terminosAceptados())) return;
   const nombreEsc = 'Escuela Cristiana Cristo a las Naciones (ECAN)';
   const d = document.createElement('div');
   d.id = 'terminos_live';
@@ -3432,10 +3467,10 @@ function revisarTerminos(){
   d.innerHTML = `<div style="background:#fff;color:#14213d;border-radius:16px;max-width:620px;width:100%;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.4);border-top:6px solid #d62839;">
     <div style="padding:22px 24px 8px;">
       <div style="font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#d62839;">Antes de entrar</div>
-      <h2 style="margin:6px 0 0;font-size:22px;">Términos y condiciones de uso</h2>
-      <div style="font-size:14px;color:#4d5a75;margin-top:4px;">Léelos con calma. Se vuelven a pedir si entras desde un equipo nuevo o cambia tu usuario.</div>
+      <h2 style="margin:6px 0 0;font-size:18px;">Términos y condiciones de uso</h2>
+      <div style="font-size:12.5px;color:#4d5a75;margin-top:4px;">Léelos con calma. Se vuelven a pedir si entras desde un equipo nuevo o cambia tu usuario.</div>
     </div>
-    <div id="terminos_cuerpo" style="padding:8px 24px;overflow:auto;font-size:15.5px;line-height:1.55;">
+    <div id="terminos_cuerpo" style="padding:10px 26px;overflow:auto;font:11.5px/1.45 Arial,Helvetica,sans-serif;text-align:justify;color:#2b2b2b;">
       <p><b>1. Objeto y aceptación.</b> Estos términos y condiciones regulan el uso de la plataforma escolar de la ${nombreEsc}, en adelante “la plataforma”. Al marcar la casilla de aceptación y entrar, la persona usuaria declara que leyó este documento completo, que lo entendió y que se compromete a cumplirlo. Si no está de acuerdo, no debe usar la plataforma.</p>
       <p><b>2. Para qué existe la plataforma.</b> La plataforma se creó con el único fin de facilitar y ordenar el trabajo y la administración docente: registrar calificaciones, asistencia, conducta, boletas, reportes y comunicaciones internas. Actualmente se ofrece a la institución como un apoyo voluntario, sin costo y sin fines de lucro, con el único deseo de servir. Si en el futuro cambia la forma de usarla (por ejemplo, un uso permanente o formal, o su uso por otras instituciones), o si otras personas quieren reproducirla o adaptarla, las condiciones se conversarán y acordarán por escrito con su autora, Brenda Gómez, y se respetará siempre su autoría.</p>
       <p><b>3. Quién puede usarla.</b> Solo pueden usarla las personas que la institución autorice: docentes, orientadores, personal administrativo y de dirección. Cada persona tiene permisos distintos según su cargo, y solo debe ver y modificar la información que le corresponde.</p>
@@ -3446,7 +3481,7 @@ function revisarTerminos(){
       <p><b>8. Propiedad de los datos y del código.</b> Los datos registrados en la plataforma pertenecen a la institución ${nombreEsc}. El código, el diseño, la estructura y las funciones de la plataforma son de autoría de Brenda Gómez. El uso de la plataforma no transfiere a la persona usuaria ningún derecho sobre el código ni autoriza a copiarlo, modificarlo o distribuirlo sin permiso por escrito de su autora. Cualquier copia de esta plataforma, o versión idéntica o muy parecida a ella, se considera una reproducción y requiere la autorización previa de su autora, como se indica en el punto 2.</p>
       <p><b>9. Cómo se protegen los datos.</b> Los datos se guardan en Google Drive. Para entrar se requiere usuario y contraseña, cada docente ve solo la información de sus grados, las sesiones están protegidas y se hacen copias de seguridad automáticas. Además, cada vez que una persona entra a la plataforma queda registrada la fecha y la hora, el usuario, la dirección IP, el lugar aproximado (ciudad y país según la IP) y el equipo usado. Este registro es solo para la seguridad: sirve para saber quién entró y desde dónde si ocurre una falla o un uso indebido. Solo lo ven los administradores, no se usa para ningún otro fin y no se registra la ubicación exacta (GPS). Estas medidas reducen los riesgos, pero ningún sistema es completamente infalible. Por eso es importante que cada persona cumpla también las normas de este documento.</p>
       <p><b>10. Marco legal.</b> El manejo de la información de la plataforma debe hacerse respetando la Constitución de la República (que garantiza el derecho a la intimidad, al honor y a la propia imagen), la Ley para la Protección de Datos Personales, la Ley Especial contra los Delitos Informáticos y Conexos, y las demás leyes que protegen a niñas, niños y adolescentes. Entrar sin autorización a información que no le corresponde, o revelar datos personales sin consentimiento, puede tener consecuencias legales para quien lo haga, aparte de las que establezca la institución.</p>
-      <p><b>11. Responsabilidad.</b> La finalidad de la plataforma es ayudar. La administradora y creadora de la plataforma no se hace responsable por el mal uso, la divulgación, la pérdida o el mal manejo de la información por parte de las personas usuarias, ni por el uso de cuentas prestadas o contraseñas compartidas. Tampoco se hace responsable por fallas del internet, de los equipos, ni de los servicios de Google que estén fuera de su control. Cada persona responde por sus propios actos al usar la plataforma.</p>
+      <p><b>11. Responsabilidad.</b> La plataforma se ofrece como una herramienta de apoyo, tal como está, sin garantía de que funcione siempre sin errores ni interrupciones. La institución es la responsable de los datos que se registran y de decidir quién tiene acceso a ellos. La autora y administradora de la plataforma no se hace responsable por: el mal uso, la divulgación, la pérdida o el mal manejo de la información por parte de las personas usuarias; el uso de cuentas prestadas, o de contraseñas compartidas o que no se hayan cambiado; los datos mal escritos o los errores al registrar información; las decisiones que se tomen con base en lo que muestra la plataforma; ni las fallas del internet, de los equipos o de servicios de terceros como Google o GitHub. Las copias de seguridad automáticas ayudan a recuperar información, pero no garantizan que nunca se pierda nada. Cada persona responde por sus propios actos al usar la plataforma. Esto no limita las responsabilidades que la ley no permita excluir.</p>
       <p><b>12. Disponibilidad y cambios en la plataforma.</b> La plataforma puede tener mejoras, cambios, pausas por mantenimiento o fallas. No se garantiza que esté disponible sin interrupciones. Se recomienda no dejar para último momento el ingreso de notas importantes.</p>
       <p><b>13. Si ocurre un problema.</b> Si la persona usuaria cree que alguien más usó su cuenta, ve información que no le corresponde, o descubre un error o una falla de seguridad, debe avisar de inmediato a Dirección o a la administradora de la plataforma, y no debe aprovecharla ni compartirla.</p>
       <p><b>14. Suspensión del acceso.</b> La institución o la administradora pueden suspender o cambiar el acceso de una persona usuaria cuando haya incumplimiento de este documento, cuando termine su relación de trabajo, o cuando sea necesario para proteger la información.</p>
@@ -3454,7 +3489,7 @@ function revisarTerminos(){
       <p><b>16. Aceptación.</b> Al marcar la casilla y presionar “Aceptar y entrar”, la persona usuaria acepta estos términos y condiciones. Al aceptar, la plataforma registra en su base de datos la fecha y la hora, el nombre de usuario, la versión de estos términos, la dirección IP, el lugar aproximado y datos básicos del equipo (navegador y sistema). Este registro puede ser consultado por los administradores como constancia de la aceptación y para cuidar la seguridad de la información. Estos términos se vuelven a pedir cuando se entra desde un equipo nuevo, cuando se crea un usuario o cuando cambia el nombre de usuario.</p>
     </div>
     <div style="padding:14px 24px 22px;border-top:1px solid #dbe2ef;">
-      <label style="display:flex;gap:10px;align-items:flex-start;font-size:15.5px;cursor:pointer;">
+      <label style="display:flex;gap:10px;align-items:flex-start;font-size:13px;cursor:pointer;">
         <input type="checkbox" id="terminos_chk" disabled style="width:20px;height:20px;margin-top:2px;flex-shrink:0;">
         <span>He leído y acepto estos términos y condiciones, y me comprometo a cuidar la información de nuestros estudiantes.</span>
       </label>
@@ -3468,7 +3503,9 @@ function revisarTerminos(){
   const alFinal = ()=>{ if(cuerpo.scrollTop + cuerpo.clientHeight >= cuerpo.scrollHeight - 24){ chk.disabled = false; if(pista) pista.style.display='none'; } };
   cuerpo.addEventListener('scroll', alFinal); setTimeout(alFinal, 300);
   chk.onchange = ()=>{ ok.disabled = !chk.checked; ok.style.opacity = chk.checked ? '1' : '.5'; };
+  if(previa) agregarCierrePrevia(d);
   ok.onclick = async ()=>{
+    if(previa){ if(!chk.checked) return; d.remove(); showToast('Vista previa: no se guardó nada.'); return; }
     if(!chk.checked || ok.dataset.busy) return;
     ok.dataset.busy = '1'; ok.textContent = 'Guardando…';
     const { ip, lugar } = await obtenerIpLugar();
@@ -3520,7 +3557,8 @@ async function revisarAcceso(){
 setInterval(revisarAcceso, 2500);
 function renderRegistroAccesos(){
   if(!puedeEnviarAviso()) return '';
-  const lista = (DB.accesos||[]).slice().sort((a,b)=>b.ts-a.ts);
+  const idsProp = {}; DB.docentes.forEach(d=>{ if(esPropietario(d)) idsProp[d.id] = true; });
+  const lista = (DB.accesos||[]).filter(x=>!idsProp[x.id]).slice().sort((a,b)=>b.ts-a.ts);
   const f = ts=>new Date(ts).toLocaleString('es',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
   return `<details class="card" id="reg_accesos" style="margin-bottom:18px;">
     <summary style="cursor:pointer;font-weight:700;font-size:17px;">📍 Registro de accesos <span style="font-weight:400;color:var(--muted);font-size:14px;">(${lista.length} registros)</span></summary>
@@ -3530,6 +3568,238 @@ function renderRegistroAccesos(){
       <tbody>${lista.slice(0,100).map(r=>`<tr style="border-bottom:1px solid var(--line);"><td style="padding:6px;white-space:nowrap;">${esc(f(r.ts))}</td><td style="padding:6px;">${esc(r.nombre||'')}</td><td style="padding:6px;">${esc(r.usuario||'')}</td><td style="padding:6px;">${esc(r.lugar||'—')}</td><td style="padding:6px;">${esc(r.ip||'—')}</td><td style="padding:6px;" title="${esc(r.equipo||'')}">${esc(equipoCorto(r.equipo))}</td></tr>`).join('') || '<tr><td colspan="6" style="padding:10px;color:var(--muted);">Todavía no hay registros.</td></tr>'}</tbody>
     </table></div>
   </details>`;
+}
+
+/* ===== Pausa de la plataforma =====
+   Dirección y Mantenimiento pueden pausar la plataforma para todas las demás personas mientras hacen cambios.
+   Lo hace cumplir el servidor (nadie más puede leer ni guardar). Quien esté dentro ve una pantalla de pausa y,
+   cuando se reanuda, sigue donde estaba. */
+let PAUSA_PUBLICA = null, _pausaTimer = null;
+function exentoPausa(u){
+  if(!u) return false;
+  if(u.tipo==='propietaria' || u.tipo==='propietario') return true;
+  return u.tipo==='admin' && (u.dominio==='direccion' || /mantenimiento/i.test(String(u.dominioNombre||'')+' '+String(u.cargo||'')));
+}
+function puedeGestionarPausa(){ return !!currentUser && !sesionEstudiante && exentoPausa(currentUser); }
+function mostrarPausa(mensaje, previa){
+  previa = (previa === true);
+  if(!previa) PAUSA_PUBLICA = {activa:true, mensaje: mensaje||''};
+  _pausaCuentaActiva = false;
+  const cu = document.getElementById('pausa_cuenta'); if(cu) cu.remove();
+  let d = document.getElementById('pausa_live');
+  if(!d){
+    d = document.createElement('div'); d.id = 'pausa_live'; d.setAttribute('role','alertdialog');
+    d.style.cssText = 'position:fixed;inset:0;background:linear-gradient(160deg,#0d2554,#16397a);color:#fff;z-index:10300;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;overflow:auto;';
+    document.body.appendChild(d);
+  }
+  const logo = (DB.ajustes && DB.ajustes.logo) ? `<img src="${DB.ajustes.logo}" alt="" style="width:84px;height:84px;object-fit:contain;background:#fff;border-radius:18px;padding:8px;margin-bottom:18px;">` : '';
+  const colegio = (DB.ajustes && DB.ajustes.nombreColegio && DB.ajustes.nombreColegio !== 'Centro Escolar') ? DB.ajustes.nombreColegio : '';
+  d.innerHTML = `<style>@keyframes pausaPulso{0%,80%,100%{opacity:.25}40%{opacity:1}} #pausa_live .pt{display:inline-block;width:9px;height:9px;border-radius:50%;background:#fff;margin:0 3px;animation:pausaPulso 1.4s infinite} #pausa_live .pt:nth-child(2){animation-delay:.2s} #pausa_live .pt:nth-child(3){animation-delay:.4s} @media (prefers-reduced-motion:reduce){#pausa_live .pt{animation:none}}</style>
+  <div style="max-width:480px;width:100%;">
+    ${logo}
+    ${colegio?`<div style="font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#c3d1f0;">${esc(colegio)}</div>`:''}
+    <h2 style="margin:10px 0 10px;font-size:28px;line-height:1.2;">🛠 Plataforma en mantenimiento</h2>
+    <p style="font-size:18px;line-height:1.5;margin:0 0 10px;">Estamos haciendo actualizaciones para mejorar la plataforma.</p>
+    ${mensaje?`<p style="font-size:17px;line-height:1.5;margin:0 0 10px;background:rgba(255,255,255,.12);padding:12px 14px;border-radius:12px;">${esc(mensaje)}</p>`:''}
+    <p style="font-size:16px;margin:0 0 14px;">Gracias por tu paciencia 💙 Vuelve en unos minutos.</p>
+    <p style="font-size:14.5px;color:#c3d1f0;margin:0 0 6px;">${currentUser?'Tus cambios sin guardar se conservan y se enviarán cuando termine el mantenimiento.':'Esta pantalla se quita sola cuando la plataforma esté lista.'}</p>
+    <div style="margin:14px 0 20px;"><span class="pt"></span><span class="pt"></span><span class="pt"></span></div>
+    <p style="font-size:13.5px;color:#c3d1f0;margin:0 0 16px;">Si es urgente, comunícate con Dirección.</p>
+    <button class="btn" id="pausa_salir" style="font-size:16px;padding:10px 22px;">${currentUser?'Salir':'Volver'}</button>
+  </div>`;
+  document.getElementById('pausa_salir').onclick = ()=>{ if(currentUser && !previa){ try{ pendientes = []; }catch(e){} doLogout(); } ocultarPausa(); };
+  if(previa){ agregarCierrePrevia(d); document.getElementById('pausa_salir').textContent = 'Cerrar'; }
+  else if(!_pausaTimer) _pausaTimer = setInterval(vigilarPausa, 15000);
+}
+/* Aviso previo: si ya había gente adentro cuando se activa la pausa, tienen 10 segundos para guardar */
+let _pausaCuentaActiva = false, _pausaCuentaHecha = false;
+function revisarAvisoPausa(){
+  const activa = !!(DB.pausa && DB.pausa.activa);
+  if(!activa){ _pausaCuentaHecha = false; return; }
+  if(!currentUser || sesionEstudiante || exentoPausa(currentUser) || _pausaCuentaActiva || _pausaCuentaHecha || document.getElementById('pausa_live')) return;
+  _pausaCuentaActiva = true; _pausaCuentaHecha = true;
+  iniciarCuentaPausa(DB.pausa.mensaje || '', false);
+}
+function iniciarCuentaPausa(msg, previa){
+  if(!previa){ try{ flush(); }catch(e){} }
+  let n = 10;
+  const c = document.createElement('div'); c.id = 'pausa_cuenta'; c.setAttribute('role','alertdialog');
+  c.style.cssText = 'position:fixed;inset:0;background:rgba(13,37,84,.75);z-index:10290;display:flex;align-items:center;justify-content:center;padding:20px;';
+  c.innerHTML = `<div style="background:#fff;color:#14213d;border-radius:18px;max-width:440px;width:100%;padding:28px;text-align:center;border-top:6px solid #d62839;box-shadow:0 20px 60px rgba(0,0,0,.4);">
+    <div style="font-size:40px;">⚠️</div>
+    <h2 style="margin:6px 0 8px;font-size:23px;">La plataforma entrará en mantenimiento</h2>
+    <p style="font-size:17px;line-height:1.45;margin:0 0 6px;">Tienes <b>10 segundos</b> para guardar tu información.</p>
+    <div id="pausa_n" style="font-size:64px;font-weight:800;color:#d62839;line-height:1.1;margin:8px 0;">10</div>
+    <p style="font-size:14px;color:#4d5a75;margin:0;">Tus cambios se están enviando.</p>
+  </div>`;
+  document.body.appendChild(c);
+  if(previa) agregarCierrePrevia(c);
+  const t = setInterval(()=>{
+    if(!document.body.contains(c)){ clearInterval(t); return; }
+    n--;
+    const e = document.getElementById('pausa_n'); if(e) e.textContent = String(Math.max(n,0));
+    if(n === 5){ try{ flush(); }catch(err){} }
+    if(n <= 0){ clearInterval(t); if(!previa){ try{ flush(); }catch(err){} } setTimeout(()=>mostrarPausa(msg, previa), 400); }
+  }, 1000);
+}
+setInterval(revisarAvisoPausa, 1000);
+function ocultarPausa(){
+  const d = document.getElementById('pausa_live'); if(d) d.remove();
+  const cu = document.getElementById('pausa_cuenta'); if(cu) cu.remove();
+  _pausaCuentaActiva = false;
+  if(_pausaTimer){ clearInterval(_pausaTimer); _pausaTimer = null; }
+}
+async function vigilarPausa(){
+  try{
+    const r = await conLimite(fetch(getSyncUrl() + '?v=' + VERSION_APP + '&accion=publico&t=' + Date.now(), {method:'GET', redirect:'follow'}), 8000);
+    const d = JSON.parse(await r.text());
+    PAUSA_PUBLICA = (d && d.pausa && d.pausa.activa) ? d.pausa : null;
+    if(!PAUSA_PUBLICA){
+      ocultarPausa();
+      if(currentUser && !sesionEstudiante){ try{ await flush(); await pullCambios(true); }catch(e){} }
+      else if(currentUser && sesionEstudiante){ actualizarDatosEstudiante(); }
+      showToast('La plataforma volvió a estar disponible.');
+    }
+  }catch(e){}
+}
+function cambiarPausa(activa, mensaje){
+  if(!puedeGestionarPausa()) return;
+  const msg = String(mensaje||'').trim().slice(0,250);
+  const quien = esPropietario(currentUser) ? 'Mantenimiento' : currentUser.nombre, ts = Date.now();
+  commit(doc=>{ doc.pausa = doc.pausa || {}; Object.assign(doc.pausa, {activa: !!activa, mensaje: msg, ts, por: quien}); });
+  viewState.pausaConfirmar = false;
+  showToast(activa ? 'Plataforma en pausa para todos los demás.' : 'Plataforma reanudada.');
+  render();
+}
+function renderControlPausa(){
+  if(!puedeGestionarPausa()) return '';
+  const p = DB.pausa || {};
+  const msgDef = p.mensaje || 'Volveremos en unos minutos.';
+  if(p.activa){
+    return `<div class="card" id="pausa_card" style="margin-bottom:18px;border:2px solid var(--red);">
+      <h3 style="margin:0 0 4px;">⏸ La plataforma está en pausa</h3>
+      <p style="margin:0 0 12px;color:var(--muted);font-size:14px;">Solo Dirección y Mantenimiento pueden entrar. Mensaje que ven los demás: “${esc(p.mensaje||'')}”</p>
+      <button class="btn btn-primary" onclick="cambiarPausa(false,'')">▶ Reanudar para todos</button>
+    </div>`;
+  }
+  return `<div class="card" id="pausa_card" style="margin-bottom:18px;">
+    <h3 style="margin:0 0 4px;">⏸ Pausar la plataforma</h3>
+    <p style="margin:0 0 12px;color:var(--muted);font-size:14px;">Úsalo mientras haces cambios. A quienes estén adentro se les avisa que tienen 10 segundos para guardar; luego nadie más podrá entrar ni guardar hasta que reanudes. Dirección y Mantenimiento siguen entrando normal.</p>
+    <textarea id="pausa_msg" maxlength="250" rows="2" placeholder="Mensaje para quienes intenten entrar (opcional)" style="width:100%;max-width:520px;">${esc(msgDef)}</textarea>
+    <div style="margin-top:10px;">
+      ${viewState.pausaConfirmar
+        ? `<span style="font-weight:700;margin-right:10px;">¿Seguro? Se cerrará el acceso de los demás.</span><button class="btn btn-primary" onclick="cambiarPausa(true, document.getElementById('pausa_msg').value)">Sí, pausar</button> <button class="btn" onclick="viewState.pausaConfirmar=false; render();">Cancelar</button>`
+        : `<button class="btn btn-primary" onclick="viewState.pausaConfirmar=true; render();">⏸ Pausar para todos</button>`}
+    </div>
+  </div>`;
+}
+/* Barra de aviso: la ven quienes pueden entrar durante la pausa, y la pantalla de inicio mientras dure */
+function actualizarBarraPausa(){
+  const activa = (DB.pausa && DB.pausa.activa) || PAUSA_PUBLICA;
+  let b = document.getElementById('pausa_barra');
+  const mostrar = activa && !document.getElementById('pausa_live') && (!currentUser || puedeGestionarPausa());
+  if(!mostrar){ if(b) b.remove(); return; }
+  if(!b){
+    b = document.createElement('div'); b.id = 'pausa_barra';
+    b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:10250;background:#d62839;color:#fff;font-weight:700;font-size:15px;padding:8px 14px;text-align:center;';
+    document.body.appendChild(b);
+  }
+  b.textContent = currentUser ? '⏸ La plataforma está en pausa para los demás. Reanúdala desde el Panel principal cuando termines.' : '⏸ La plataforma está en pausa por mantenimiento. Solo Dirección y Mantenimiento pueden entrar.';
+}
+setInterval(actualizarBarraPausa, 2000);
+
+/* ===== Contraseña propia obligatoria =====
+   Los docentes (no los administradores) que todavía tengan la contraseña que se entrega al inicio ("ecan") deben crear una propia:
+   mínimo 6 caracteres, con número, mayúscula, minúscula y un carácter especial. */
+function requisitosClave(txt){
+  txt = String(txt||'');
+  return [
+    {ok: txt.length >= 6, t: 'Mínimo 6 caracteres'},
+    {ok: /[0-9]/.test(txt), t: 'Al menos un número'},
+    {ok: /[A-ZÑ]/.test(txt), t: 'Al menos una letra mayúscula'},
+    {ok: /[a-zñ]/.test(txt), t: 'Al menos una letra minúscula'},
+    {ok: /[^A-Za-z0-9ÑñáéíóúÁÉÍÓÚüÜ\s]/.test(txt), t: 'Al menos un carácter especial (por ejemplo ! # $ % & * ?)'},
+    {ok: txt !== '' && !/\s/.test(txt), t: 'Sin espacios'}
+  ];
+}
+function claveSegura(txt){ return requisitosClave(txt).every(r=>r.ok); }
+function debeCambiarClave(u){
+  if(!u || sesionEstudiante) return false;
+  u = (DB.docentes||[]).find(x=>x.id===u.id) || u;      // siempre la copia más reciente
+  if(u.tipo !== 'docente') return false;               // administradores y propietaria conservan su contraseña
+  if(!u.clave) return false;
+  if(u.clave === hashClave('ecan') || u.clave === hashClave('ECAN') || u.clave === hashClave('Ecan')) return true;
+  return String(u.claveTexto||'').toLowerCase() === 'ecan';
+}
+function revisarCambioClave(previa){
+  previa = (previa === true);
+  if(!currentUser || (!previa && !debeCambiarClave(currentUser))) return;
+  if(document.getElementById('clave_obligada')) return;
+  if(!previa && (document.getElementById('terminos_live') || document.getElementById('pausa_live') || document.getElementById('pausa_cuenta'))) return;
+  const d = document.createElement('div');
+  d.id = 'clave_obligada'; d.setAttribute('role','dialog'); d.setAttribute('aria-modal','true');
+  d.style.cssText = 'position:fixed;inset:0;background:rgba(13,37,84,.78);z-index:10180;display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto;';
+  d.innerHTML = `<div style="background:#fff;color:#14213d;border-radius:16px;max-width:440px;width:100%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.4);border-top:6px solid #d62839;">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#d62839;">Seguridad</div>
+    <h2 style="margin:6px 0 8px;font-size:22px;">Crea tu propia contraseña</h2>
+    <p style="margin:0 0 14px;font-size:15.5px;line-height:1.5;">Tu contraseña actual es la que se entrega al inicio y es igual para todos. Para cuidar la información de los estudiantes, crea una propia.</p>
+    <label for="cf_nueva" style="font-weight:700;font-size:14px;">Nueva contraseña</label>
+    <input type="password" id="cf_nueva" autocomplete="new-password" style="width:100%;margin:4px 0 10px;">
+    <label for="cf_rep" style="font-weight:700;font-size:14px;">Escríbela otra vez</label>
+    <input type="password" id="cf_rep" autocomplete="new-password" style="width:100%;margin:4px 0 8px;">
+    <label style="display:flex;gap:8px;align-items:center;font-size:14px;margin-bottom:10px;cursor:pointer;"><input type="checkbox" id="cf_ver"> Mostrar contraseña</label>
+    <ul id="cf_lista" style="list-style:none;margin:0 0 12px;padding:0;font-size:14.5px;line-height:1.6;"></ul>
+    <div id="cf_error" style="color:#d62839;font-size:14px;min-height:18px;margin-bottom:6px;"></div>
+    <button class="btn btn-primary" id="cf_ok" disabled style="width:100%;font-size:16px;padding:12px;opacity:.5;">Guardar y continuar</button>
+    <button class="btn" id="cf_salir" style="width:100%;margin-top:8px;">Salir</button>
+  </div>`;
+  document.body.appendChild(d);
+  const n = document.getElementById('cf_nueva'), r = document.getElementById('cf_rep'), ok = document.getElementById('cf_ok'), lista = document.getElementById('cf_lista');
+  const act = ()=>{
+    const reqs = requisitosClave(n.value).concat([{ok: n.value !== '' && n.value === r.value, t: 'Las dos contraseñas coinciden'}]);
+    lista.innerHTML = reqs.map(q=>`<li style="color:${q.ok?'#1b7f4b':'#4d5a75'};">${q.ok?'✔':'○'} ${esc(q.t)}</li>`).join('');
+    const bien = reqs.every(q=>q.ok); ok.disabled = !bien; ok.style.opacity = bien ? '1' : '.5';
+  };
+  n.oninput = r.oninput = act; act();
+  document.getElementById('cf_ver').onchange = e=>{ n.type = r.type = e.target.checked ? 'text' : 'password'; };
+  document.getElementById('cf_salir').onclick = ()=>{ d.remove(); if(!previa) doLogout(); };
+  if(previa) agregarCierrePrevia(d);
+  ok.onclick = async ()=>{
+    const nueva = n.value;
+    if(!claveSegura(nueva) || nueva !== r.value) return;
+    if(previa){ d.remove(); showToast('Vista previa: tu contraseña no cambió.'); return; }
+    ok.disabled = true; ok.textContent = 'Guardando…';
+    const h = hashClave(nueva), yo = currentUser.id;
+    commit(doc=>{ const t = (doc.docentes||[]).find(x=>x.id===yo); if(t){ t.clave = h; t.claveTexto = ''; } });
+    try{ await flush(); }catch(e){}
+    if(pendientes.length > 0){
+      document.getElementById('cf_error').textContent = 'No se pudo guardar. Revisa tu conexión e intenta de nuevo.';
+      ok.disabled = false; ok.textContent = 'Guardar y continuar'; return;
+    }
+    d.remove();
+    showToast('Listo, tu contraseña quedó actualizada. Úsala la próxima vez que entres.');
+  };
+  setTimeout(()=>n.focus(), 100);
+}
+setInterval(revisarCambioClave, 1500);
+
+/* ===== Ver como docente (vista previa) ===== */
+function vistaPreviaTerminos(){ revisarTerminos(true); }
+function vistaPreviaClave(){ revisarCambioClave(true); }
+function vistaPreviaAviso(){ if(document.getElementById('aviso_live')) return; mostrarAvisoVentana({texto:'Reunión en 5 minutos en la dirección. (Este es un aviso de ejemplo.)', deNombre:'Dirección', para:'todos'}, null, true); }
+function vistaPreviaPausa(){ if(document.getElementById('pausa_cuenta') || document.getElementById('pausa_live')) return; iniciarCuentaPausa('Volveremos en unos minutos. (Mensaje de ejemplo.)', true); }
+function renderVistaPrevia(){
+  if(!currentUser || sesionEstudiante || !puedeCambiarVista(currentUser)) return '';
+  return `<div class="card" id="vp_card" style="margin-bottom:18px;">
+    <h3 style="margin:0 0 4px;">👁 Ver como docente</h3>
+    <p style="margin:0 0 12px;color:var(--muted);font-size:14px;">Mira lo que ven los docentes, sin cambiar nada. Es solo una vista previa: no se guarda ninguna contraseña, aceptación ni aviso.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+      <button class="btn btn-sm" onclick="vistaPreviaTerminos()">📜 Términos y condiciones</button>
+      <button class="btn btn-sm" onclick="vistaPreviaClave()">🔑 Cambio de contraseña obligatorio</button>
+      <button class="btn btn-sm" onclick="vistaPreviaAviso()">📣 Aviso</button>
+      <button class="btn btn-sm" onclick="vistaPreviaPausa()">⏸ Cuenta regresiva y mantenimiento</button>
+    </div>
+  </div>`;
 }
 const AVISO_VIDA_MS = 10*60*1000;
 const _avisosVistosMem = {};
@@ -3552,7 +3822,7 @@ function avisoMarcarVisto(id){
 function puedeEnviarAviso(){ return !!currentUser && !sesionEstudiante && isAdmin(currentUser); }
 function renderEnviarAviso(){
   if(!puedeEnviarAviso()) return '';
-  const docs = DB.docentes.filter(d=>d.id!==currentUser.id).sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre),'es'));
+  const docs = DB.docentes.filter(d=>d.id!==currentUser.id && !esPropietario(d)).sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre),'es'));
   const ult = (DB.avisos||[]).filter(a=>a.deId===currentUser.id).slice(-3).reverse();
   const para = a=> a.para==='todos' ? 'todos' : ((DB.docentes.find(d=>d.id===a.para)||{}).nombre || 'una persona');
   return `<div class="card" id="av_card" style="margin-bottom:18px;">
@@ -3580,7 +3850,7 @@ function enviarAviso(){
     doc.avisos = doc.avisos || [];
     const ahora = Date.now();
     for(let i=doc.avisos.length-1;i>=0;i--){ if(ahora - doc.avisos[i].ts > 3600*1000) doc.avisos.splice(i,1); }
-    doc.avisos.push({id, deId: currentUser.id, deNombre: currentUser.nombre, para, texto, ts: ahora});
+    doc.avisos.push({id, deId: currentUser.id, deNombre: esPropietario(currentUser) ? 'Administración' : currentUser.nombre, para, texto, ts: ahora});
   });
   avisoMarcarVisto(id);
   if(t) t.value = '';
@@ -3594,6 +3864,9 @@ function revisarAvisos(){
   const a = DB.avisos.find(x=> x && x.deId!==currentUser.id && (x.para==='todos' || x.para===currentUser.id)
     && ahora - x.ts < AVISO_VIDA_MS && ahora - x.ts > -60000 && !vistos[x.id]);
   if(!a) return;
+  mostrarAvisoVentana(a, ()=>{ avisoMarcarVisto(a.id); setTimeout(revisarAvisos,300); }, false);
+}
+function mostrarAvisoVentana(a, alCerrar, previa){
   const d = document.createElement('div');
   d.id = 'aviso_live';
   d.setAttribute('role','alertdialog');
@@ -3605,7 +3878,8 @@ function revisarAvisos(){
     <button class="btn btn-primary" id="aviso_ok" style="margin-top:18px;width:100%;font-size:16px;padding:12px;">Entendido</button>
   </div>`;
   document.body.appendChild(d);
-  document.getElementById('aviso_ok').onclick = ()=>{ avisoMarcarVisto(a.id); d.remove(); setTimeout(revisarAvisos,300); };
+  if(previa) agregarCierrePrevia(d);
+  document.getElementById('aviso_ok').onclick = ()=>{ d.remove(); if(alCerrar) alCerrar(); };
   document.getElementById('aviso_ok').focus();
 }
 setInterval(revisarAvisos, 4000);
@@ -3643,6 +3917,7 @@ function render(){
   const app = document.getElementById('app');
   try{
     if(DB.ajustes && DB.ajustes.nombreColegio){ try{ document.title = DB.ajustes.nombreColegio; }catch(eT){} }
+    try{ ponerFavicon(); }catch(eF){}
     if(versionRechazada){ app.innerHTML = renderVersionObsoleta(); return; }
     if(!currentUser){ app.innerHTML = renderLogin(); activarOrtografia(); return; }
     if(vistaEstudiantePreview && !sesionEstudiante){
@@ -3787,6 +4062,7 @@ async function entrarComoDocenteLogin(){
     let res = null;
     try{ res = crudo && clave ? await loginServidor(crudo, clave, false) : null; }
     catch(e){ viewState.errorLoginDocente = 'No se pudo conectar con la escuela. Intenta de nuevo.'; render(); return; }
+    if(res && res.pausa){ viewState.errorLoginDocente = 'La plataforma está en pausa por mantenimiento. Intenta más tarde.'; render(); return; }
     if(!res || res.bloqueado){
       viewState.errorLoginDocente = res && res.bloqueado ? 'Demasiados intentos. Espera 15 minutos e intenta de nuevo.' : 'Usuario o contraseña incorrectos.';
       render(); setTimeout(()=>{ const c = document.getElementById('doc_clave_input'); if(c) c.focus(); }, 60);
@@ -3908,6 +4184,7 @@ async function entrarPropietaria(){
     let res = null;
     try{ res = val0 ? await loginServidor('', val0, true) : null; }
     catch(e){ viewState.accesoPropietaria = {error:'No se pudo conectar con la escuela. Intenta de nuevo.'}; render(); return; }
+    if(res && res.pausa){ viewState.accesoPropietaria = {error:'La plataforma está en pausa por mantenimiento.'}; render(); return; }
     if(!res || res.bloqueado){
       viewState.accesoPropietaria = {error: res && res.bloqueado ? 'Demasiados intentos. Espera 15 minutos.' : 'Contraseña incorrecta.'};
       render(); setTimeout(()=>{ const c = document.getElementById('clave_prop_input'); if(c) c.focus(); }, 60);
@@ -4112,6 +4389,19 @@ function renderCopiasSeguridad(){
 }
 
 /* ---------- Seguridad de acceso: quién no podrá entrar cuando el Apps Script nuevo esté publicado ---------- */
+/* Desde la tarjeta de Seguridad: lleva a Usuarios, contraseñas y accesos y deja el cursor en la casilla de ese usuario */
+function irAPonerClave(id){
+  PREFS.persVista = 'usuarios';
+  try{ window.localStorage.setItem('prefs_ui', JSON.stringify(PREFS)); }catch(e){}
+  goTo('personalizar');
+  setTimeout(()=>{
+    const c = document.getElementById('cl_'+id);
+    if(!c) return;
+    c.scrollIntoView({block:'center', behavior:'smooth'});
+    c.focus();
+    const fila = c.closest('tr'); if(fila){ fila.style.transition='background .4s'; fila.style.background='#fff4c2'; setTimeout(()=>{ fila.style.background=''; }, 2500); }
+  }, 250);
+}
 function renderSeguridadAcceso(){
   if(!puedeGestionarCopias()) return '';
   const sinClave = (DB.docentes||[]).filter(d=>!esPropietario(d) && !tieneClave(d));
@@ -4121,7 +4411,7 @@ function renderSeguridadAcceso(){
     : '<span class="pill pill-gold">Sin proteger: falta publicar el Apps Script nuevo</span>';
   const lista = sinClave.length
     ? `<div class="aviso-motor"><strong>${sinClave.length} docente(s) no tienen contraseña</strong> y no podrán entrar cuando el Apps Script nuevo esté publicado. Asígnales una en <b>Docentes y asignaturas → Editar</b>:
-        <div style="margin-top:6px;">${sinClave.map(d=>esc(d.nombre)).join(' · ')}</div></div>`
+        <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;">${sinClave.map(d=>`<button class="btn btn-sm" onclick="irAPonerClave('${d.id}')">🔑 Poner contraseña a ${esc(d.nombre)}</button>`).join('')}</div></div>`
     : `<p style="margin:0 0 6px; font-size:14px;">✔ Todos los docentes tienen contraseña.</p>`;
   return `<div class="card"><h3 class="card-title">🔐 Seguridad de acceso ${estado}</h3>
     ${lista}
@@ -8150,6 +8440,8 @@ function renderPanel(){
     <button class="btn" onclick="viewState.modalNotificaciones=true; render();">🔔 Notificaciones${totalNotificacionesDocente()>0?` (${totalNotificacionesDocente()>99?'99+':totalNotificacionesDocente()})`:''}</button>
   </div>
   ${renderAprobarBienvenidas()}
+  ${renderControlPausa()}
+  ${renderVistaPrevia()}
   ${renderEnviarAviso()}
   ${renderRegistroTerminos()}
   ${renderRegistroAccesos()}
@@ -11084,6 +11376,7 @@ function cambiarMiClave(){
     }
   }
   if(nueva.length < 4){ showToast('La nueva contraseña debe tener al menos 4 caracteres.'); return; }
+  if(currentUser.tipo === 'docente' && !claveSegura(nueva)){ showToast('Usa mínimo 6 caracteres, con número, mayúscula, minúscula y un carácter especial.'); return; }
   if(nueva !== repetir){ showToast('Las dos contraseñas nuevas no coinciden.'); return; }
   const h = hashClave(nueva);
   const yo = currentUser.id;
