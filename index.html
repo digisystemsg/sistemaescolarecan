@@ -444,7 +444,7 @@
   .portada .fondo .mn div.w{grid-column:1/-1;height:150px;border-top-color:#C62836}
   .portada .velo{position:absolute;inset:0;background:linear-gradient(100deg,rgba(8,32,79,.93),rgba(10,33,80,.66) 60%,rgba(10,33,80,.5))}
   .portada .bienv{position:relative;color:#fff;max-width:520px}
-  .portada .bienv .login-logo{max-height:72px;width:auto;margin:0 0 4px;display:block;background:#fff;border-radius:14px;padding:6px}
+  .portada .bienv .login-logo{width:112px;height:112px;margin:0 0 4px;display:block;background:#fff;border-radius:14px;padding:6px}
   .portada .bienv .eb{font:700 11px 'Inter',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#f1b4ba;margin-top:14px}
   .portada .bienv h1{color:#fff;font-size:clamp(30px,3.8vw,46px);line-height:1.08;margin:8px 0 0}
   .portada .bienv h1::after{content:"";display:block;width:56px;height:3px;background:#C62836;margin-top:16px;border-radius:2px}
@@ -473,7 +473,7 @@
     .portada .fondo .mn div{background:#DCE5F4;height:110px}.portada .fondo .mn div.w{height:150px}
     .portada .velo{background:rgba(241,245,251,.5)}
     .portada .bienv{max-width:none;color:#14213D}
-    .portada .bienv .login-logo{max-height:60px;margin:0;background:transparent;padding:0;border-radius:0;mix-blend-mode:multiply}
+    .portada .bienv .login-logo{width:60px;height:60px;margin:0;background:transparent;padding:0;border-radius:0;mix-blend-mode:multiply}
     .portada .bienv .eb{color:#C62836;margin-top:18px}
     .portada .bienv h1{color:#14213D;font-size:29px;font-weight:700;margin:6px 0 0}
     .portada .bienv h1::after{margin-top:14px}
@@ -488,6 +488,13 @@
     .portada .login-card p[style*="--red"]{color:#C62836!important}
     .portada .colform .btn-sm{color:#12306E;font-weight:600}
   }
+
+  /* ---------- MENÚ LATERAL CON TRANSPARENCIA ---------- */
+  .layout{position:relative;background:#F2F5FB}
+  .layout::before{content:"";position:fixed;left:-120px;top:-100px;width:620px;height:900px;z-index:0;pointer-events:none;
+    background:radial-gradient(closest-side at 40% 22%,#2A5CA8 0,rgba(42,92,168,0) 100%),radial-gradient(closest-side at 60% 52%,#6FA0E8 0,rgba(111,160,232,0) 100%);opacity:.75}
+  .sidebar{z-index:2;background:linear-gradient(180deg,rgba(8,32,79,.80),rgba(15,45,104,.72))!important;backdrop-filter:blur(16px) saturate(1.2);-webkit-backdrop-filter:blur(16px) saturate(1.2)}
+  .main{position:relative;z-index:1}
 </style>
 </head>
 <body>
@@ -712,6 +719,11 @@ function abrirNovedades(lista, esAutomatico){
   if(!lista.length){ showToast('Por ahora no hay novedades para ti.'); return; }
   NOV = {lista, i:-1, auto:!!esAutomatico};
   dibujarNovedades();
+}
+function iniciarBroma(){
+  if(document.getElementById('nov_susto')) return;
+  abrirNovedades(undefined, true);
+  if(NOV) novSusto();
 }
 function dibujarNovedades(){
   let d = document.getElementById('novedades_card');
@@ -4661,6 +4673,7 @@ function renderLayout(){
         <p class="user-name" style="margin:0;">${esc(propEnVistaDocente(currentUser)?nombreDocenteVista(currentUser):currentUser.nombre)}</p>
         <p class="user-role" style="margin:0 0 10px;">${esc(domainLabel(currentUser))}</p>
         <button class="btn btn-sm" id="btn_novedades" style="width:100%; margin-bottom:6px;" onclick="abrirNovedades()">✨ Novedades</button>
+        ${puedeCambiarVista(currentUser)?`<button class="btn btn-sm" id="btn_broma" style="width:100%; margin-bottom:6px;" onclick="iniciarBroma()">🎬 Iniciar</button>`:''}
         <button class="logout-btn" onclick="doLogout()">Cambiar de usuario</button>
         <button class="btn btn-sm" style="width:100%; margin-top:6px; background:none; border:none; color:#DCE6F6; font-size:13px;" onclick="toggleSidebarFooter()">Ocultar ▲</button>
         ` : ''}
