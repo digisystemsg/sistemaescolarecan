@@ -642,6 +642,11 @@
   /* ---------- Navegar con las flechas ---------- */
   .im-tile:focus-visible,.nav-item:focus-visible,.as-cel:focus-visible,.as-b:focus-visible,.as-p:focus-visible,.as-n:focus-visible{ outline:3px solid #6C8BD6; outline-offset:2px; }
   input:focus-visible,textarea:focus-visible,select:focus-visible,.btn:focus-visible{ outline:2px solid #6C8BD6; outline-offset:1px; }
+
+/* logo en encabezado de paneles (solo computadora) */
+@media(min-width:761px){
+ body:not(.en-inicio) .main .page-head{ position:relative; padding-right:130px; min-height:100px; background-image:var(--logo-url,none); background-repeat:no-repeat; background-position:right 0 top 2px; background-size:96px 96px; }
+}
 </style>
 </head>
 <body>
@@ -764,7 +769,7 @@ if('serviceWorker' in navigator){
    Cada entrega lleva un número de versión. Al abrir la plataforma (y cada cierto rato, o al volver a la
    pestaña) se compara con la versión publicada; si es distinta, aparece un aviso discreto abajo.
    Si es la misma, no pasa nada. Súbele el número cada vez que se publique una actualización. */
-const APP_VERSION = '2026-11-03-0950';
+const APP_VERSION = '2026-11-03-1015';
 let _avisoVersionMostrado = false, _ultimaRevisionVersion = 0;
 async function revisarVersionNueva(){
   if(_avisoVersionMostrado) return;
@@ -16013,5 +16018,7 @@ function renderMatriz(){
   marcar();
 })();
 </script>
+<script>(function(){function f(){try{var l=(DB&&DB.ajustes&&DB.ajustes.logo)||'';var v=l?'url("'+l+'")':'none';if(document.documentElement.style.getPropertyValue('--logo-url')!==v)document.documentElement.style.setProperty('--logo-url',v);}catch(e){}}
+new MutationObserver(f).observe(document.body,{childList:true,subtree:true});setInterval(f,1500);f();})();</script>
 </body>
 </html>
