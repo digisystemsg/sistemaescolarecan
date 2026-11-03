@@ -767,7 +767,7 @@ if('serviceWorker' in navigator){
    Cada entrega lleva un número de versión. Al abrir la plataforma (y cada cierto rato, o al volver a la
    pestaña) se compara con la versión publicada; si es distinta, aparece un aviso discreto abajo.
    Si es la misma, no pasa nada. Súbele el número cada vez que se publique una actualización. */
-const APP_VERSION = '2026-11-03-1235';
+const APP_VERSION = '2026-11-03-1450';
 let _avisoVersionMostrado = false, _ultimaRevisionVersion = 0;
 async function revisarVersionNueva(){
   if(_avisoVersionMostrado) return;
@@ -868,6 +868,7 @@ function abrirNovedades(lista, esAutomatico){
   lista = lista || NOVEDADES.reduce((a,n)=>a.concat(n.items),[]).filter(i=>novOk(i,currentUser));
   if(!lista.length){ showToast('Por ahora no hay novedades para ti.'); return; }
   NOV = {lista, i:-1, auto:!!esAutomatico};
+  try{ document.body.classList.remove('menu-m'); }catch(e){}
   dibujarNovedades();
 }
 function iniciarBroma(){
@@ -974,8 +975,11 @@ function novPaso(i){
   NOV.i = i;
   const it = NOV.lista[i];
   if(it.prefs){ Object.keys(it.prefs).forEach(k=>{ PREFS[k] = it.prefs[k]; }); }
-  if(it.abrirMenu && typeof sidebarFooterVisible!=='undefined' && !sidebarFooterVisible){ try{ toggleSidebarFooter(); }catch(e){} }
-  if(it.panel){ if(currentView===it.panel){ render(); } else { goTo(it.panel); } }
+  /* El menú lateral solo se abre en los pasos que lo señalan (y se cierra en los demás, para que no tape la pantalla) */
+  const enMenu = !!(it.abrirMenu || /sync-indicator|btn_novedades/.test(it.target||''));
+  if(enMenu && typeof sidebarFooterVisible!=='undefined' && !sidebarFooterVisible){ try{ sidebarFooterVisible = true; }catch(e){} }
+  if(it.panel){ if(currentView===it.panel){ render(); } else { goTo(it.panel); } } else { render(); }
+  try{ document.body.classList.toggle('menu-m', enMenu); }catch(e){}
   NOV.listo = false;
   dibujarNovedades();
   setTimeout(()=>{ if(NOV && NOV.i===i){ const t = novObjetivo(it); if(t){ try{ t.scrollIntoView({block:'center', behavior:'smooth'}); }catch(e){} } novColocar(); } }, 450);
@@ -1016,7 +1020,7 @@ function novDetener(){
   showToast('Listo: el recorrido no volverá a aparecer hasta la próxima actualización.');
   cerrarNovedades();
 }
-function cerrarNovedades(){ if(NOV){ marcarNovedadesVistas(); } NOV = null; dibujarNovedades(); }
+function cerrarNovedades(){ if(NOV){ marcarNovedadesVistas(); } NOV = null; try{ document.body.classList.remove('menu-m'); }catch(e){} dibujarNovedades(); }
 function appYaInstalada(){
   try{ return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; }
   catch(e){ return false; }
