@@ -520,7 +520,7 @@
     .mbar button{ border:0; background:rgba(255,255,255,.14); color:#fff; font-size:20px; line-height:1; width:40px; height:40px; border-radius:12px; cursor:pointer; }
     .mbar .t{ font:600 15px/1.2 'Inter',sans-serif; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .sidebar{ position:fixed!important; left:0; top:0; bottom:0; height:100dvh!important; width:min(84vw,300px)!important; transform:translateX(-105%); transition:transform .25s ease; z-index:60!important; }
-    body.menu-m .sidebar{ background:linear-gradient(180deg,rgba(8,32,79,.98),rgba(15,45,104,.97))!important; transform:none; box-shadow:8px 0 40px rgba(0,0,0,.35); }
+    body.menu-m .sidebar{ background:linear-gradient(180deg,rgba(8,32,79,.62),rgba(15,45,104,.52))!important; -webkit-backdrop-filter:blur(18px) saturate(1.3); backdrop-filter:blur(18px) saturate(1.3); transform:none; box-shadow:8px 0 40px rgba(0,0,0,.25); }
     .mvelo{ position:fixed; inset:0; background:rgba(8,20,50,.45); z-index:55; }
     body.menu-m .mvelo{ display:block; }
     .main{ padding:18px 14px 40px!important; max-width:none!important; }
@@ -556,8 +556,8 @@
   .ledger-table th:first-child{background:var(--panel-2)}
   /* Hoja de tareas y Caracterización: se ven completas encogidas (se puede acercar con dos dedos) */
   .hj-tabla{zoom:.46}
-  .table-wrap:not(:has(.ledger-table)){overflow:hidden}
-  .table-wrap:not(:has(.ledger-table)) > table{zoom:.42}
+  .table-wrap:not(:has(.ledger-table)):not(:has(.as-tabla)){overflow:hidden}
+  .table-wrap:not(:has(.ledger-table)):not(:has(.as-tabla)) > table{zoom:.42}
   /* Boleta completa */
   .boleta-hoja .bol-tabla{ width:100%!important; table-layout:fixed!important; }
   .boleta-hoja{ overflow:hidden; }
@@ -568,6 +568,46 @@
   .boleta-firmas{ flex-wrap:wrap; gap:18px 12px; }
   .boleta-firmas > div{ flex:1 1 40%; min-width:110px; }
 }
+/* ---------- ASISTENCIA y COMPLEMENTAR CARACTERIZACIÓN ---------- */
+:root{--asP:#2e7d32;--asT:#e8a33a;--asA:#c0392b;--asJ:#5B79B8}
+.as-lock{display:inline-block;background:#E3E8F3;color:#12306E;border-radius:8px;font-size:11px;font-weight:600;padding:2px 9px;vertical-align:middle;margin-left:6px}
+.as-sem{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:0 0 10px;font-size:13px}.as-rg{margin-left:auto;color:#6B7487;font-size:12px}
+.as-r{background:#fff;border:1px solid var(--line-strong);border-radius:12px;padding:8px 10px;margin-top:8px}
+.as-top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:14px}
+.as-bs{display:flex;gap:5px;flex-wrap:wrap}
+.as-b{min-width:72px;height:32px;border-radius:9px;border:1px solid #C9D2E6;background:#fff;color:#5A6478;font-size:12px;cursor:pointer}
+.as-b.on.as-P,.as-c.as-P{background:#E5F3E9;color:#1F6B3A;border-color:#9CCBA8}
+.as-b.on.as-T,.as-c.as-T{background:#FFF1D2;color:#9A6A00;border-color:#E7C66F}
+.as-b.on.as-A,.as-c.as-A{background:#FBE5DC;color:#B5552B;border-color:#E5A98E}
+.as-b.on.as-J,.as-c.as-J{background:#E1E9F8;color:#2F4F9A;border-color:#9EB3E3}
+.as-mo{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line-strong);font-size:12px;color:#5A6478}
+.as-p{border:1px solid #C9D2E6;border-radius:999px;padding:4px 11px;font-size:12px;margin:4px 4px 0 0;background:#fff;color:#1F2530;cursor:pointer}
+.as-p.on{background:#12306E;color:#fff;border-color:#12306E}.as-p.as-ch.on{background:#DCE6F8;color:#12306E;border-color:#8FA8DA}
+.as-p.on.as-A{background:#FBE5DC;color:#B5552B;border-color:#E5A98E}.as-p.on.as-J{background:#E1E9F8;color:#2F4F9A;border-color:#9EB3E3}
+.as-p:disabled,.as-n:disabled{cursor:default;opacity:.75}
+.as-c{display:inline-block;width:26px;height:26px;line-height:24px;text-align:center;border-radius:8px;border:1px solid transparent;font-weight:700;font-size:12px}
+.as-c.as-v{background:#F2F5FB;color:#9AA3B5;border-color:#E3E8F3}
+.as-cel{border:0;background:transparent;padding:2px;cursor:pointer}
+.as-tabla{width:100%;border-collapse:collapse;background:#fff;font-size:13px}.as-tabla th,.as-tabla td{border:1px solid var(--line-strong);padding:6px 6px;text-align:center}.as-tabla th{background:var(--panel-2);font-size:11px;color:#5A6478}.as-tabla td:first-child,.as-tabla th:first-child{text-align:left;min-width:150px}
+.as-libre{background:#F2F5FB;color:#9AA3B5}
+.as-lg{font-size:12px;color:#5A6478;margin:8px 0}.as-lg span{margin-right:12px;white-space:nowrap}
+.as-resumen-dia{margin-top:12px;font-size:13px;background:#F2F5FB;border-radius:10px;padding:8px 12px;color:#12306E}
+.as-k4{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:0 0 14px}.as-k{background:#fff;border:1px solid var(--line-strong);border-radius:12px;padding:10px 12px}.as-k b{display:block;font-size:20px}.as-k span{font-size:11px;color:#6B7487}
+.as-tP{color:#1F6B3A}.as-tT{color:#9A6A00}.as-tA{color:#B5552B}.as-tJ{color:#2F4F9A}
+.as-g2{display:grid;grid-template-columns:1.3fr 1fr;gap:14px}
+.as-bars{display:flex;align-items:flex-end;gap:12px;height:150px;border-bottom:1px solid var(--line-strong);padding:0 6px}.as-bw{flex:1 1 0;max-width:56px;text-align:center;font-size:11px;color:#6B7487}
+.as-st{display:flex;flex-direction:column-reverse;height:126px}.as-st i{display:block;width:100%}
+.as-bg-P{background:var(--asP)}.as-bg-T{background:var(--asT)}.as-bg-A{background:var(--asA)}.as-bg-J{background:var(--asJ)}
+.as-dot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:4px}
+.as-donut{width:130px;height:130px;border-radius:50%;margin:6px auto;position:relative}.as-donut span{position:absolute;inset:26px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#12306E;font-size:20px}
+.as-mb{display:flex;align-items:center;gap:8px;font-size:12px;margin:6px 0}.as-mb span{width:110px}.as-mb i{display:block;height:10px;border-radius:5px;background:#5B79B8}.as-mb em{font-style:normal;color:#6B7487}
+.as-bol{background:#12306E;color:#fff;border-radius:8px;padding:2px 9px;font-weight:700;font-size:12px}
+.as-it{padding:8px 0;border-bottom:1px solid #EEF1F7;font-size:13px}.as-it:last-child{border:0}.as-it small{color:#8A93A6;font-size:10.5px;margin-left:6px}
+.as-sc{display:flex;gap:6px;margin-top:4px}.as-n{width:30px;height:28px;border:1px solid #C9D2E6;border-radius:8px;background:#fff;font-size:12px;cursor:pointer}.as-n.on{background:#12306E;color:#fff;border-color:#12306E}
+.as-au{margin-top:5px;background:#F2F5FB;border-radius:10px;padding:7px 10px;font-size:12.5px;color:#12306E;line-height:1.45}.as-au small{display:block;color:#6B7487;font-size:11px;margin-top:2px}
+.as-nv{border-radius:10px;padding:8px 10px;font-size:13px;margin-bottom:4px}.as-nv.ok{background:#E5F3E9;color:#1F6B3A}.as-nv.mal{background:#FBE5DC;color:#B5552B}
+.as-up{color:#1F6B3A;font-weight:700}.as-dn{color:#B5552B;font-weight:700}.as-eq{color:#6B7487}
+@media(max-width:760px){.as-k4{grid-template-columns:1fr 1fr}.as-g2{grid-template-columns:1fr}.as-b{min-width:64px}}
 </style>
 </head>
 <body>
@@ -690,7 +730,7 @@ if('serviceWorker' in navigator){
    Cada entrega lleva un número de versión. Al abrir la plataforma (y cada cierto rato, o al volver a la
    pestaña) se compara con la versión publicada; si es distinta, aparece un aviso discreto abajo.
    Si es la misma, no pasa nada. Súbele el número cada vez que se publique una actualización. */
-const APP_VERSION = '2026-11-03-0300';
+const APP_VERSION = '2026-11-03-0640';
 let _avisoVersionMostrado = false, _ultimaRevisionVersion = 0;
 async function revisarVersionNueva(){
   if(_avisoVersionMostrado) return;
@@ -1410,7 +1450,7 @@ function docActual(){
     observaciones: DB.observaciones, ajustes: DB.ajustes, rubros: DB.rubros,
     boletaDatos: DB.boletaDatos, hojas: DB.hojas, bitacora: DB.bitacora, reportes: DB.reportes, averias: DB.averias,
     soporte: DB.soporte, mensajes: DB.mensajes, reportesEliminados: DB.reportesEliminados, reuniones: DB.reuniones,
-    reunionesEliminadas: DB.reunionesEliminadas, cartasRecup: DB.cartasRecup, caract: DB.caract, conducta: DB.conducta, avisos: DB.avisos, accesos: DB.accesos, pausa: DB.pausa, presencia: DB.presencia
+    reunionesEliminadas: DB.reunionesEliminadas, cartasRecup: DB.cartasRecup, caract: DB.caract, conducta: DB.conducta, avisos: DB.avisos, accesos: DB.accesos, pausa: DB.pausa, presencia: DB.presencia, asistencia: DB.asistencia, complemento: DB.complemento
   };
 }
 function adoptarDoc(doc){
@@ -1441,6 +1481,8 @@ function adoptarDoc(doc){
   DB.conducta = doc.conducta || {};
   DB.avisos = doc.avisos || [];
   DB.presencia = (doc.presencia && typeof doc.presencia==='object') ? doc.presencia : {};
+  DB.asistencia = (doc.asistencia && typeof doc.asistencia==='object') ? doc.asistencia : {};
+  DB.complemento = (doc.complemento && typeof doc.complemento==='object') ? doc.complemento : {};
   DB.accesos = doc.accesos || [];
   DB.pausa = (doc.pausa && typeof doc.pausa==='object') ? doc.pausa : {activa:false};
   DB.ajustes = doc.ajustes || {nombreColegio:'Centro Escolar', lema:'Cuaderno digital', logo:''};
@@ -2572,6 +2614,8 @@ function combinarDocs(local, nube, preferirNube){
     },
     pausa: nube.pausa || local.pausa || {activa:false},
     presencia: Object.assign({}, local.presencia||{}, nube.presencia||{}),
+    asistencia: {reg:Object.assign({}, (local.asistencia||{}).reg||{}, (nube.asistencia||{}).reg||{}), mot:Object.assign({}, (local.asistencia||{}).mot||{}, (nube.asistencia||{}).mot||{}), libre:Object.assign({}, (local.asistencia||{}).libre||{}, (nube.asistencia||{}).libre||{})},
+    complemento: Object.assign({}, local.complemento||{}, nube.complemento||{}),
     accesos: (nube.accesos||[]).concat((local.accesos||[]).filter(l=>!(nube.accesos||[]).some(x=>x.ts===l.ts&&x.id===l.id))).slice(-400),
     avisos: (nube.avisos||[]).concat((local.avisos||[]).filter(l=>!(nube.avisos||[]).some(x=>x.id===l.id))).slice(-40),
     bitacora: (nube.bitacora||[]).concat((local.bitacora||[]).filter(l=>!(nube.bitacora||[]).some(x=>x.ts===l.ts && x.userId===l.userId))).slice(-800),
@@ -4689,10 +4733,505 @@ function doLogout(){
   guardarSesion(); render();
 }
 
+/* ============================= ASISTENCIA (solo Mantenimiento de plataforma) =============================
+   DB.asistencia = { reg:{'grado|AAAA-MM-DD':{estId:'P'|'T'|'A'|'J'}}, mot:{'grado|fecha|estId':'texto'}, libre:{'AAAA-MM-DD':'motivo'} }
+   Presente, Tardía y Justificada cuentan como asistencia. Solo Ausente (A) es inasistencia. */
+const ASIS_MOTIVOS_A = ['Enfermedad','Asunto familiar','Viaje','Transporte','Sin aviso','Otro'];
+const ASIS_MOTIVOS_J = ['Cita médica','Enfermedad','Asunto familiar','Permiso de la escuela','Otro'];
+const ASIS_COD = {P:'Presente', T:'Tardía', A:'Ausente', J:'Justif.'};
+function asisDatos(){ if(!DB.asistencia) DB.asistencia = {}; const a = DB.asistencia; a.reg = a.reg||{}; a.mot = a.mot||{}; a.libre = a.libre||{}; return a; }
+function asisPuede(){ return !!currentUser && puedeCambiarVista(currentUser); }
+function asisSumaDias(iso, n){ const d = new Date(iso+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); }
+function asisDiaSemana(iso){ return new Date(iso+'T00:00:00Z').getUTCDay(); }   // 0 dom ... 6 sáb
+function asisFechaCorta(iso){
+  const m = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const d = new Date(iso+'T00:00:00Z'); return d.getUTCDate()+' '+m[d.getUTCMonth()];
+}
+function asisNombreDia(iso){ return ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][asisDiaSemana(iso)]; }
+/* Rango del período: inicio configurado por Dirección; fin = día antes del siguiente inicio (o 13 semanas) */
+function asisRango(p){
+  const f = (DB.config.periodosFechas||[]);
+  const ini = f[p-1] && f[p-1].inicio;
+  if(!ini) return null;
+  const sig = f[p] && f[p].inicio;
+  const fin = (sig && sig > ini) ? asisSumaDias(sig, -1) : asisSumaDias(ini, 13*7-1);
+  return {ini, fin};
+}
+/* Semanas (lunes a viernes) del período */
+function asisSemanas(p){
+  const r = asisRango(p); if(!r) return [];
+  let lun = r.ini; while(asisDiaSemana(lun)!==1) lun = asisSumaDias(lun, -1);
+  const out = [];
+  while(lun <= r.fin){
+    const dias = [0,1,2,3,4].map(i=>asisSumaDias(lun,i)).filter(d=>d>=r.ini && d<=r.fin);
+    if(dias.length) out.push(dias);
+    lun = asisSumaDias(lun, 7);
+  }
+  return out;
+}
+function asisEsLibre(f){ return !!asisDatos().libre[f]; }
+function asisMarca(grado, f, estId){ return (asisDatos().reg[grado+'|'+f]||{})[estId] || ''; }
+function asisDiaTieneLista(grado, f){ return Object.keys(asisDatos().reg[grado+'|'+f]||{}).length>0; }
+/* Todos los días de clase del período con lista tomada */
+function asisDiasConLista(grado, p){
+  const dias = [];
+  asisSemanas(p).forEach(s=>s.forEach(f=>{ if(!asisEsLibre(f) && asisDiaTieneLista(grado, f)) dias.push(f); }));
+  return dias;
+}
+/* Conteo de un estudiante: lo que no tiene marca en un día con lista cuenta como presente */
+function asisConteoEst(grado, p, estId){
+  const dias = asisDiasConLista(grado, p);
+  const c = {P:0, T:0, A:0, J:0, total: dias.length};
+  dias.forEach(f=>{ const m = asisMarca(grado, f, estId) || 'P'; c[m]++; });
+  return c;
+}
+function asisPorcentaje(c){ return c.total ? (c.A / c.total * 100) : 0; }
+function asisTextoBoleta(c){ return Math.round(asisPorcentaje(c))+'%/'+c.total; }
+function asisEstudiantes(grado, p){ return ordenarEstudiantes(estudiantesDelGrado(grado, p), getPref('ordenEst','apellidos')); }
+function asisNombre(e){ return apellidosDe(e)+', '+(typeof nombresDe==='function' ? nombresDe(e) : ''); }
+
+/* --- edición --- */
+function asisMarcar(grado, f, estId, cod){
+  commit(doc=>{
+    const a = doc.asistencia = doc.asistencia || {}; a.reg = a.reg||{}; a.mot = a.mot||{}; a.libre = a.libre||{};
+    const k = grado+'|'+f; a.reg[k] = a.reg[k] || {};
+    if(!cod || a.reg[k][estId]===cod){ delete a.reg[k][estId]; delete a.mot[k+'|'+estId]; }
+    else { a.reg[k][estId] = cod; if(cod==='P'||cod==='T') delete a.mot[k+'|'+estId]; }
+    if(Object.keys(a.reg[k]).length===0) delete a.reg[k];
+  });
+  render();
+}
+function asisCiclo(grado, f, estId){
+  const sec = ['', 'P', 'T', 'A', 'J'];
+  const i = sec.indexOf(asisMarca(grado, f, estId));
+  const sig = sec[(i+1)%sec.length];
+  commit(doc=>{
+    const a = doc.asistencia = doc.asistencia || {}; a.reg = a.reg||{}; a.mot = a.mot||{}; a.libre = a.libre||{};
+    const k = grado+'|'+f; a.reg[k] = a.reg[k] || {};
+    if(!sig){ delete a.reg[k][estId]; delete a.mot[k+'|'+estId]; } else { a.reg[k][estId] = sig; if(sig==='P'||sig==='T') delete a.mot[k+'|'+estId]; }
+    if(Object.keys(a.reg[k]).length===0) delete a.reg[k];
+  });
+  render();
+}
+function asisTodosPresentes(grado, p, f){
+  const ests = asisEstudiantes(grado, p);
+  commit(doc=>{
+    const a = doc.asistencia = doc.asistencia || {}; a.reg = a.reg||{}; a.libre = a.libre||{};
+    const k = grado+'|'+f; a.reg[k] = a.reg[k] || {};
+    ests.forEach(e=>{ if(!a.reg[k][e.id]) a.reg[k][e.id] = 'P'; });
+    delete a.libre[f];
+  });
+  registrar('Asistencia', 'Pase de lista '+grado+' · '+f);
+  render();
+}
+function asisMotivo(grado, f, estId, motivo){
+  commit(doc=>{
+    const a = doc.asistencia = doc.asistencia || {}; a.mot = a.mot||{};
+    const k = grado+'|'+f+'|'+estId;
+    if(a.mot[k]===motivo) delete a.mot[k]; else a.mot[k] = motivo;
+  });
+  render();
+}
+function asisAlternarLibre(f){
+  const ya = !!asisDatos().libre[f];
+  let motivo = '';
+  if(!ya){ motivo = prompt('¿Por qué no hay clases ese día? (feriado, asueto, suspensión…)', 'Feriado'); if(motivo===null) return; }
+  commit(doc=>{
+    const a = doc.asistencia = doc.asistencia || {}; a.libre = a.libre||{};
+    if(ya) delete a.libre[f]; else a.libre[f] = motivo || 'Sin clase';
+  });
+  render();
+}
+function asisPasarABoleta(grado, p, estId){
+  const e = DB.estudiantes.find(x=>x.id===estId); if(!e) return;
+  const txt = asisTextoBoleta(asisConteoEst(grado, p, estId));
+  commit(doc=>{
+    doc.boletaDatos = doc.boletaDatos || {};
+    doc.boletaDatos[estId] = doc.boletaDatos[estId] || {};
+    doc.boletaDatos[estId].inasistencias = doc.boletaDatos[estId].inasistencias || {};
+    doc.boletaDatos[estId].inasistencias[p] = txt;
+  });
+}
+function asisPasarTodasABoleta(grado, p){
+  if(!confirm('¿Pasar la inasistencia de todo el grupo (período '+p+') a la boleta? Reemplaza lo que ya esté escrito en ese período.')) return;
+  asisEstudiantes(grado, p).forEach(e=>asisPasarABoleta(grado, p, e.id));
+  registrar('Asistencia', 'Pasó la inasistencia del período '+p+' ('+grado+') a las boletas');
+  showToast('Listo: pasó a las boletas.');
+  render();
+}
+
+/* --- pantalla --- */
+function asisGradoSel(){
+  const gs = DB.config.grados || [];
+  const g = getPref('asisGrado','');
+  return (g && gs.includes(g)) ? g : (gs[0] || '');
+}
+function asisPeriodoSel(){ return Math.min(4, Math.max(1, Number(getPref('asisPer',1))||1)); }
+function asisSemanaSel(p){
+  const ss = asisSemanas(p); if(!ss.length) return -1;
+  let i = getPref('asisSem_'+p, null);
+  if(i===null || i===undefined || i==='' || isNaN(Number(i))){
+    const hoy = hoyISO(); const k = ss.findIndex(s=>s.indexOf(hoy)>=0 || s[0]>hoy);
+    i = k>=0 ? k : ss.length-1;
+  }
+  return Math.min(ss.length-1, Math.max(0, Number(i)));
+}
+function asisDiaSel(sem){
+  const d = getPref('asisDia','');
+  if(sem.indexOf(d)>=0) return d;
+  const hoy = hoyISO(); return sem.indexOf(hoy)>=0 ? hoy : sem[0];
+}
+function asisChip(cod, grande){ return `<span class="as-c as-${cod}${grande?' as-g':''}">${cod}</span>`; }
+function renderAsistencia(){
+  if(!asisPuede()) return renderNoAccess();
+  const grados = DB.config.grados || [];
+  const head = `<div class="page-head"><p class="page-eyebrow">Registro</p>
+    <h1 class="page-title">Asistencia <span class="as-lock">🔒 solo Mantenimiento</span></h1>
+    <p class="page-desc">Se marca por día y se cuenta por semana y por período. Presente, tardía y justificada cuentan como asistencia; solo ausente es inasistencia.</p></div>`;
+  if(!grados.length) return head + `<div class="card"><p class="empty">Todavía no hay grados creados.</p></div>`;
+  const grado = asisGradoSel(), p = asisPeriodoSel();
+  const tab = ['lista','semana','resumen'].includes(getPref('asisTab','lista')) ? getPref('asisTab','lista') : 'lista';
+  const tabs = `<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
+    ${[['lista','Pase de lista'],['semana','Semana'],['resumen','Resumen del período']].map(([k,t])=>`<button class="btn ${tab===k?'btn-primary':''}" onclick="setPref('asisTab','${k}')">${t}</button>`).join('')}</div>`;
+  const filtros = `<div class="filters">
+    <div class="field"><label>Aula</label><select onchange="setPref('asisGrado',this.value)">${grados.map(g=>`<option ${g===grado?'selected':''}>${esc(g)}</option>`).join('')}</select></div>
+    <div class="field"><label>Período</label><select onchange="setPref('asisPer',this.value)">${[1,2,3,4].map(n=>`<option value="${n}" ${n===p?'selected':''}>Período ${n}</option>`).join('')}</select></div></div>`;
+  const r = asisRango(p);
+  if(!r) return head + tabs + filtros + `<div class="card"><p class="empty">Dirección todavía no configuró la fecha de inicio del período ${p} (Personalizar → fechas de los períodos).</p></div>`;
+  const rango = `<p class="nota-chica" style="margin:0 0 10px;">Período ${p}: del ${asisFechaCorta(r.ini)} al ${asisFechaCorta(r.fin)}.</p>`;
+  let cuerpo = '';
+  if(tab==='resumen') cuerpo = asisResumenHtml(grado, p);
+  else cuerpo = asisSemanaNav(p) + (tab==='lista' ? asisListaHtml(grado, p) : asisSemanaHtml(grado, p));
+  return head + tabs + filtros + rango + cuerpo;
+}
+function asisSemanaNav(p){
+  const ss = asisSemanas(p), i = asisSemanaSel(p);
+  const est = ss.map((s,k)=>`<button class="btn btn-sm ${k===i?'btn-primary':''}" onclick="setPref('asisSem_${p}',${k})">${k+1}</button>`).join('');
+  return `<div class="as-sem"><span>Semana:</span>${est}<span class="as-rg">${ss[i] ? asisFechaCorta(ss[i][0])+' al '+asisFechaCorta(ss[i][ss[i].length-1]) : ''}</span></div>`;
+}
+function asisListaHtml(grado, p){
+  const ss = asisSemanas(p), sem = ss[asisSemanaSel(p)] || [];
+  const f = asisDiaSel(sem);
+  const ests = asisEstudiantes(grado, p);
+  const libre = asisDatos().libre[f];
+  const dias = `<div class="as-sem"><span>Día:</span>${sem.map(d=>`<button class="btn btn-sm ${d===f?'btn-primary':''}" onclick="setPref('asisDia','${d}')">${asisNombreDia(d)} ${d.slice(8)}${asisEsLibre(d)?' ⛔':''}</button>`).join('')}</div>`;
+  const acciones = `<div class="btn-row" style="margin:6px 0 10px;">
+    <button class="btn btn-primary" onclick="asisTodosPresentes('${esc(grado)}',${p},'${f}')">✓ Todos presentes</button>
+    <button class="btn" onclick="asisAlternarLibre('${f}')">${libre?'Quitar día sin clase':'Día sin clase (feriado)'}</button></div>`;
+  if(libre) return dias + acciones + `<div class="card"><p class="empty">${esc(asisNombreDia(f))} ${asisFechaCorta(f)} marcado sin clases: ${esc(libre)}. No cuenta en los días del período.</p></div>`;
+  const filas = ests.map((e,i)=>{
+    const m = asisMarca(grado, f, e.id);
+    const btns = ['P','T','A','J'].map(c=>`<button class="as-b ${m===c?'as-'+c+' on':''}" onclick="asisMarcar('${esc(grado)}','${f}','${e.id}','${c}')">${ASIS_COD[c]}</button>`).join('');
+    let mot = '';
+    if(m==='A' || m==='J'){
+      const cur = asisDatos().mot[grado+'|'+f+'|'+e.id] || '';
+      const lista = m==='A' ? ASIS_MOTIVOS_A : ASIS_MOTIVOS_J;
+      mot = `<div class="as-mo">Motivo: ${lista.map(x=>`<button class="as-p ${cur===x?'on '+(m==='A'?'as-A':'as-J'):''}" onclick="asisMotivo('${esc(grado)}','${f}','${e.id}','${esc(x)}')">${x}</button>`).join('')}</div>`;
+    }
+    return `<div class="as-r"><div class="as-top"><span>${i+1}. ${esc(asisNombre(e))}</span><span class="as-bs">${btns}</span></div>${mot}</div>`;
+  }).join('');
+  const cuenta = {P:0,T:0,A:0,J:0}; ests.forEach(e=>{ const m = asisMarca(grado,f,e.id); if(m) cuenta[m]++; });
+  return dias + acciones + (filas || '<div class="card"><p class="empty">No hay estudiantes en esta aula.</p></div>') +
+    `<div class="as-resumen-dia">Hoy: ${cuenta.P} presentes · ${cuenta.T} tardías · ${cuenta.A} ausentes · ${cuenta.J} justificadas</div>`;
+}
+function asisSemanaHtml(grado, p){
+  const ss = asisSemanas(p), sem = ss[asisSemanaSel(p)] || [];
+  const ests = asisEstudiantes(grado, p);
+  const th = sem.map(d=>`<th>${asisNombreDia(d)} ${d.slice(8)}${asisEsLibre(d)?'<br><small>sin clase</small>':''}</th>`).join('');
+  const filas = ests.map((e,i)=>{
+    const celdas = sem.map(d=>{
+      if(asisEsLibre(d)) return `<td class="as-libre">—</td>`;
+      const m = asisMarca(grado, d, e.id);
+      return `<td><button class="as-cel" onclick="asisCiclo('${esc(grado)}','${d}','${e.id}')">${m?asisChip(m):'<span class="as-c as-v">·</span>'}</button></td>`;
+    }).join('');
+    const cn = {A:0,T:0,J:0}; sem.forEach(d=>{ const m = asisMarca(grado,d,e.id); if(cn[m]!==undefined) cn[m]++; });
+    const t = [cn.A?cn.A+'A':'', cn.T?cn.T+'T':'', cn.J?cn.J+'J':''].filter(Boolean).join(' · ') || '—';
+    return `<tr><td>${i+1}. ${esc(asisNombre(e))}</td>${celdas}<td>${t}</td></tr>`;
+  }).join('');
+  const lg = ['P','A','T','J'].map(c=>`<span>${asisChip(c)} ${ASIS_COD[c]}</span>`).join('');
+  return `<div class="table-wrap"><table class="as-tabla"><thead><tr><th>Estudiante</th>${th}<th>Semana</th></tr></thead><tbody>${filas}</tbody></table></div>
+    <div class="as-lg">${lg}<br>Toca una casilla para cambiarla (vacío → P → T → A → J).</div>`;
+}
+function asisResumenHtml(grado, p){
+  const ests = asisEstudiantes(grado, p);
+  const dias = asisDiasConLista(grado, p);
+  if(!dias.length) return `<div class="card"><p class="empty">Todavía no hay listas tomadas en este período. Usa “Pase de lista” para empezar.</p></div>`;
+  const tot = {P:0,T:0,A:0,J:0}; const porEst = ests.map(e=>{ const c = asisConteoEst(grado,p,e.id); ['P','T','A','J'].forEach(k=>tot[k]+=c[k]); return {e,c}; });
+  const base = dias.length * (ests.length||1);
+  const pc = k => (base ? tot[k]/base*100 : 0);
+  const asistencia = pc('P')+pc('T')+pc('J');
+  const kp = (v,l,cl)=>`<div class="as-k"><b class="${cl}">${v}</b><span>${l}</span></div>`;
+  const kpis = `<div class="as-k4">${kp(asistencia.toFixed(0)+'%','Asistencia (presente, tardía y justificada)','as-tP')}${kp(pc('A').toFixed(0)+'%','Inasistencia (ausente)','as-tA')}${kp(pc('T').toFixed(0)+'%','Tardías','as-tT')}${kp(pc('J').toFixed(0)+'%','Justificadas','as-tJ')}${kp(dias.length+' días','Días de clase con lista tomada','')}</div>`;
+  // por semana
+  const bars = asisSemanas(p).map((s,i)=>{
+    const c = {P:0,T:0,A:0,J:0}; let n = 0;
+    s.forEach(d=>{ if(asisEsLibre(d)||!asisDiaTieneLista(grado,d)) return; ests.forEach(e=>{ c[asisMarca(grado,d,e.id)||'P']++; n++; }); });
+    if(!n) return '';
+    const h = k=>`<i class="as-bg-${k}" style="height:${(c[k]/n*100).toFixed(1)}%" title="${ASIS_COD[k]} ${(c[k]/n*100).toFixed(0)}%"></i>`;
+    return `<div class="as-bw"><div class="as-st">${['P','T','A','J'].map(h).join('')}</div>S${i+1}</div>`;
+  }).join('');
+  const grados = `conic-gradient(var(--asP) 0 ${pc('P').toFixed(2)}%, var(--asT) 0 ${(pc('P')+pc('T')).toFixed(2)}%, var(--asA) 0 ${(pc('P')+pc('T')+pc('A')).toFixed(2)}%, var(--asJ) 0 100%)`;
+  const lg = [['P','Presente'],['T','Tardía'],['A','Ausente'],['J','Justificada']].map(([k,t])=>`<span><i class="as-dot as-bg-${k}"></i>${t} ${pc(k).toFixed(0)}%</span>`).join('');
+  // motivos
+  const mot = {}; 
+  dias.forEach(d=>ests.forEach(e=>{ const m = asisMarca(grado,d,e.id); if(m==='A'||m==='J'){ const x = asisDatos().mot[grado+'|'+d+'|'+e.id] || 'Sin motivo anotado'; mot[x]=(mot[x]||0)+1; } }));
+  const mm = Object.entries(mot).sort((a,b)=>b[1]-a[1]), mx = mm.length ? mm[0][1] : 1;
+  const motHtml = mm.length ? mm.map(([k,v])=>`<div class="as-mb"><span>${esc(k)}</span><i style="width:${Math.max(6,v/mx*140)}px"></i><em>${v}</em></div>`).join('') : '<p class="nota-chica">Sin ausencias ni justificadas.</p>';
+  const filas = porEst.map(({e,c},i)=>`<tr><td>${i+1}. ${esc(asisNombre(e))}</td><td class="as-tP">${c.P}</td><td class="as-tT">${c.T}</td><td class="as-tA">${c.A}</td><td class="as-tJ">${c.J}</td><td>${c.total}</td><td>${asisPorcentaje(c).toFixed(1)}%</td>
+    <td><span class="as-bol">${asisTextoBoleta(c)}</span> <button class="btn btn-sm" onclick="asisPasarABoleta('${esc(grado)}',${p},'${e.id}');showToast('Pasó a la boleta.');render()">Pasar</button></td></tr>`).join('');
+  return `${kpis}
+  <div class="as-g2"><div class="card"><div class="card-title">Por semana</div><div class="as-bars">${bars}</div><div class="as-lg">${lg}</div></div>
+  <div class="card"><div class="card-title">Todo el período</div><div class="as-donut" style="background:${grados}"><span>${asistencia.toFixed(0)}%</span></div><div class="as-lg" style="text-align:center">asistencia</div>
+  <div class="card-title" style="margin-top:12px">Motivos de ausencia</div>${motHtml}</div></div>
+  <div class="card"><div class="card-title">Por estudiante</div><div class="table-wrap"><table class="as-tabla"><thead><tr><th>Estudiante</th><th>Presente</th><th>Tardías</th><th>Ausentes</th><th>Justif.</th><th>Total días</th><th>% inasist.</th><th>Para la boleta</th></tr></thead><tbody>${filas}</tbody></table></div>
+  <p class="nota-chica"><b>9%/43</b> = 9% de inasistencia sobre 43 días de clase. Los días se cuentan solo cuando se tomó lista y no son feriados. Las justificadas cuentan como asistencia.</p>
+  <div class="btn-row"><button class="btn btn-primary" onclick="asisPasarTodasABoleta('${esc(grado)}',${p})">Pasar todo el grupo a las boletas</button></div></div>`;
+}
+
+/* ============================= COMPLEMENTAR CARACTERIZACIÓN (Boletas → Complementar caracterización) =============================
+   DB.complemento = { 'estId|periodo': { clave: 'opción' | ['opción', ...] | 1..5 } }
+   Solo sirve para enriquecer los comentarios de Reconocimiento y Recomendación. No reemplaza ni se imprime con la Caracterización. */
+const COMP_ESQUEMA = [
+  {area:'Conducta y convivencia', filas:[
+    {key:'correccion', label:'Cómo reacciona ante una corrección', tipo:'o', ops:['La acepta y mejora','La acepta, pero se molesta','Se enoja','Se cierra o llora','La ignora']},
+    {key:'normas', label:'Cumplimiento de normas del aula', tipo:'s'},
+    {key:'trato_c', label:'Trato a compañeros', tipo:'o', ops:['Respetuoso','Amable','Reservado','Brusco','Burlón']},
+    {key:'trato_d', label:'Trato a docentes', tipo:'o', ops:['Respetuoso','Confiado en exceso','Desafiante','Evita hablar']},
+    {key:'situaciones', label:'Situaciones del período', tipo:'auto'},
+    {key:'conflictos', label:'Cómo resuelve los conflictos', tipo:'o', ops:['Dialoga','Pide ayuda al docente','Se aleja','Responde con agresión']},
+    {key:'reportes', label:'Reportes de conducta', tipo:'auto'}]},
+  {area:'Aprendizaje', filas:[
+    {key:'ritmo', label:'Ritmo de aprendizaje', tipo:'o', ops:['Rápido','Adecuado','Lento','Necesita refuerzo']},
+    {key:'instr', label:'Comprensión de instrucciones', tipo:'o', ops:['Entiende a la primera','Necesita repetirlas','Necesita ejemplo','No las sigue']},
+    {key:'cuesta', label:'Lo que más le cuesta', tipo:'c', ops:['Leer','Escribir','Operaciones','Razonar problemas','Memorizar','Copiar de la pizarra','Concentrarse','Expresarse']},
+    {key:'rinde', label:'Cuándo rinde mejor', tipo:'o', ops:['Solo','En parejas','En grupo','Con guía directa']},
+    {key:'aprende', label:'Cómo aprende mejor', tipo:'c', ops:['Viendo','Escuchando','Haciendo','Con juegos','Con ejemplos reales']},
+    {key:'trabajo', label:'Trabajo en clase', tipo:'o', ops:['Termina a tiempo','Termina tarde','Deja incompleto','No trabaja']},
+    {key:'autonomia', label:'Autonomía', tipo:'s'},
+    {key:'calidad', label:'Calidad de lo que entrega', tipo:'o', ops:['Excelente','Buena','Básica','Descuidada']}]},
+  {area:'Atención y participación', filas:[
+    {key:'atencion', label:'Atención durante la clase', tipo:'s'},
+    {key:'distrae', label:'Qué lo distrae', tipo:'c', ops:['Compañeros','Objetos','Ventana o ruido','Cansancio','Hambre','Preocupaciones','Nada']},
+    {key:'particip', label:'Participación', tipo:'o', ops:['Voluntaria y constante','Solo si se le pide','Rara vez','Nunca']},
+    {key:'preguntas', label:'Hace preguntas', tipo:'o', ops:['Siempre','A veces','Nunca']},
+    {key:'expresa', label:'Cómo se expresa al hablar', tipo:'o', ops:['Con claridad','Con timidez','Con dificultad','Desordenado']}]},
+  {area:'Emocional', filas:[
+    {key:'animo', label:'Estado de ánimo habitual', tipo:'o', ops:['Alegre','Tranquilo','Decaído','Ansioso','Irritable']},
+    {key:'cambio', label:'Cambio frente al período anterior', tipo:'o', ops:['Mejoró','Igual','Empeoró']},
+    {key:'frustra', label:'Manejo de la frustración', tipo:'o', ops:['Persiste','Pide ayuda','Se desanima','Se frustra y abandona']},
+    {key:'autoest', label:'Autoestima y seguridad', tipo:'s'},
+    {key:'senales', label:'Señales observadas', tipo:'c', ops:['Llanto','Aislamiento','Miedo a equivocarse','Busca atención','Cansancio','Cambios bruscos','Ninguna']},
+    {key:'motiva', label:'Qué lo motiva', tipo:'c', ops:['Elogios','Juegos de equipo','Premios o puntos','Tareas retadoras','Ayudar a otros','Trabajo manual']}]},
+  {area:'Relaciones y social', filas:[
+    {key:'relac', label:'Con quién se relaciona', tipo:'o', ops:['Con todos','Con un grupo','Con uno o dos','Casi con nadie']},
+    {key:'rol', label:'Rol en el grupo', tipo:'c', ops:['Líder','Colaborador','Mediador','Seguidor','Aislado']},
+    {key:'equipo', label:'Trabajo en equipo', tipo:'s'},
+    {key:'inclusion', label:'Inclusión', tipo:'o', ops:['Incluye a otros','Es incluido','A veces excluido','Excluido']},
+    {key:'acoso', label:'Situaciones de acoso o burla', tipo:'o', ops:['Ninguna','Las recibe','Las provoca','En observación']}]},
+  {area:'Hábitos y presentación', filas:[
+    {key:'puntual', label:'Puntualidad', tipo:'o', ops:['Siempre','Casi siempre','Llega tarde a veces','Frecuente']},
+    {key:'materiales', label:'Materiales completos', tipo:'o', ops:['Siempre','A veces','Rara vez']},
+    {key:'orden', label:'Orden del cuaderno y útiles', tipo:'s'},
+    {key:'uniforme', label:'Uniforme y cabello', tipo:'o', ops:['Cumple','A veces','No cumple']},
+    {key:'higiene', label:'Higiene personal', tipo:'o', ops:['Adecuada','A mejorar','Preocupante']},
+    {key:'refrigerio', label:'Refrigerio y alimentación', tipo:'o', ops:['Saludable','Mixto','Poco saludable','No lleva']}]},
+  {area:'Familia y casa', filas:[
+    {key:'f_resp', label:'Respuesta de la familia', tipo:'o', ops:['Siempre','Casi siempre','Pocas veces','No responde']},
+    {key:'f_agenda', label:'Revisa la agenda', tipo:'o', ops:['Diario','Algunas veces','Rara vez','Nunca']},
+    {key:'f_tareas', label:'Apoyo en tareas en casa', tipo:'s'},
+    {key:'f_reun', label:'Asistencia a reuniones', tipo:'o', ops:['Siempre','A veces','Nunca']},
+    {key:'f_casa', label:'Situación en casa que afecta', tipo:'c', ops:['Cambio de hogar','Horarios de trabajo','Viaje','Pérdida','Ninguna','Prefiere no decir']}]},
+  {area:'Cierre del período', filas:[
+    {key:'logro', label:'Mayor logro', tipo:'c', ops:['Mejoró notas','Mejoró conducta','Más participación','Más responsable','Mejor trato','Más seguridad']},
+    {key:'dificultad', label:'Principal dificultad', tipo:'c', ops:['Notas bajas','Conducta','Atención','Tareas','Relación con compañeros','Asistencia','Emocional']},
+    {key:'apoyo', label:'Apoyo aplicado', tipo:'c', ops:['Refuerzo','Conversación','Cambio de lugar','Tarea adaptada','Citó a la familia','Remisión']},
+    {key:'funciono', label:'¿Funcionó?', tipo:'o', ops:['Sí','En parte','No']}]}
+];
+function compDatos(){ if(!DB.complemento) DB.complemento = {}; return DB.complemento; }
+function compFicha(estId, p){ return compDatos()[estId+'|'+p] || {}; }
+function compSet(estId, p, key, valor){
+  commit(doc=>{
+    doc.complemento = doc.complemento || {};
+    const k = estId+'|'+p; const d = doc.complemento[k] = doc.complemento[k] || {};
+    if(valor===null || valor==='' || (Array.isArray(valor) && !valor.length)) delete d[key]; else d[key] = valor;
+    if(!Object.keys(d).length) delete doc.complemento[k];
+  });
+  render();
+}
+function compElegir(estId, p, key, op){
+  const cur = compFicha(estId, p)[key];
+  compSet(estId, p, key, cur===op ? null : op);
+}
+function compMarcar(estId, p, key, op){
+  const cur = compFicha(estId, p)[key]; const arr = Array.isArray(cur) ? cur.slice() : [];
+  const i = arr.indexOf(op); if(i>=0) arr.splice(i,1); else arr.push(op);
+  compSet(estId, p, key, arr);
+}
+function compEscala(estId, p, key, n){
+  const cur = compFicha(estId, p)[key];
+  compSet(estId, p, key, cur===n ? null : n);
+}
+/* ---- datos automáticos: notas, conducta, reportes, inasistencias ---- */
+function compNotas(estId, p, grado){
+  return asignaturasDeGrado(grado).map(a=>({n:a.nombre, v:carNota(estId, a.id, p, grado)})).filter(x=>x.v!==null);
+}
+/* Excelente: todas 90+ · Muy buenas: todas 80+ · Buenas: todas 70+ · si hay alguna menor de 70: debe mejorar */
+function compNivelNotas(notas){
+  if(!notas.length) return null;
+  const min = Math.min.apply(null, notas.map(x=>x.v));
+  if(min>=90) return {nivel:'Excelente', txt:'Todas sus notas son de 90 o más.', ok:true};
+  if(min>=80) return {nivel:'Muy buenas', txt:'Todas sus notas son de 80 o más.', ok:true};
+  if(min>=70) return {nivel:'Buenas', txt:'Todas sus notas son de 70 o más.', ok:true};
+  const bajas = notas.filter(x=>x.v<70);
+  return {nivel:'Debe mejorar', txt:'Debe mejorar en '+bajas.map(x=>x.n+' ('+x.v+')').join(', ')+'.', ok:false, bajas};
+}
+function compPromedio(notas){ return notas.length ? notas.reduce((s,x)=>s+x.v,0)/notas.length : null; }
+function compComparativa(estId, p, grado){
+  const nA = compNotas(estId, p, grado);
+  const out = {nivel:compNivelNotas(nA), promedio:compPromedio(nA), ant:null, suben:[], bajan:[]};
+  out.cond = {v:condPromedio(estId, p), ant:null};
+  out.rep = {act:carReportes(estId, p), ant:null};
+  const fa = carFicha(estId, p);
+  out.inas = {v:(fa.inas!==undefined?fa.inas:null), ant:null};
+  if(p>1){
+    const nB = compNotas(estId, p-1, grado);
+    out.ant = compPromedio(nB);
+    nA.forEach(x=>{ const y = nB.find(z=>z.n===x.n); if(!y) return; const d = x.v-y.v; if(d>=3) out.suben.push({n:x.n,d}); else if(d<=-3) out.bajan.push({n:x.n,d}); });
+    out.cond.ant = condPromedio(estId, p-1);
+    out.rep.ant = carReportes(estId, p-1);
+    const ia = carFicha(estId, p-1).inas; out.inas.ant = (ia!==undefined ? ia : null);
+  }
+  return out;
+}
+function compTotRep(c){ return c ? (c.F1||0)+(c.F2||0)+(c.F3||0)+(c.CV||0) : 0; }
+function compListaTxt(arr){
+  const a = arr.filter(Boolean); if(a.length<=1) return a.join('');
+  return a.slice(0,-1).join(', ')+' y '+a[a.length-1];
+}
+function compSub(v){ return Array.isArray(v) ? v : (v ? [v] : []); }
+/* ---- comentarios armados: alimentan Reconocimiento y Recomendación ---- */
+function carComplementoPartes(estId, p, grado){
+  const d = compFicha(estId, p);
+  const rec = [], reco = [];
+  const mapaLogro = {'Mejoró notas':'sus notas','Mejoró conducta':'su conducta','Más participación':'su participación','Más responsable':'su responsabilidad','Mejor trato':'su trato con los demás','Más seguridad':'su seguridad'};
+  const lgTxt = compSub(d.logro).map(x=>mapaLogro[x]).filter(Boolean);
+  if(lgTxt.length) rec.push('Se reconoce la mejora en '+compListaTxt(lgTxt)+'.');
+  const rolesPos = compSub(d.rol).filter(x=>['Líder','Colaborador','Mediador'].indexOf(x)>=0).map(x=>x.toLowerCase());
+  if(rolesPos.length) rec.push('En el grupo se desempeña como '+compListaTxt(rolesPos)+'.');
+  if(d.trato_c==='Respetuoso' || d.trato_c==='Amable') rec.push('Tiene un trato '+d.trato_c.toLowerCase()+' con sus compañeros.');
+  if(d.particip==='Voluntaria y constante') rec.push('Participa de forma voluntaria y constante.');
+  if(d.cambio==='Mejoró') rec.push('Su ánimo y actitud mejoraron frente al período anterior.');
+  if(d.correccion==='La acepta y mejora') rec.push('Acepta las correcciones y mejora a partir de ellas.');
+  if(Number(d.autoest)>=4) rec.push('Muestra seguridad y buena autoestima.');
+  const cmp = compComparativa(estId, p, grado);
+  if(cmp.nivel){
+    if(cmp.nivel.ok){
+      if(cmp.nivel.nivel==='Excelente') rec.push('Sus notas son excelentes: todas de 90 o más.');
+      else if(cmp.nivel.nivel==='Muy buenas') rec.push('Sus notas son muy buenas: todas de 80 o más.');
+    } else reco.push('Sus notas deben mejorar en '+cmp.nivel.bajas.map(x=>x.n+' ('+x.v+')').join(', ')+'.');
+  }
+  if(p>1 && cmp.promedio!==null && cmp.ant!==null){
+    const dif = Math.round(cmp.promedio - cmp.ant);
+    if(dif<=-3) reco.push('Su promedio bajó '+Math.abs(dif)+' puntos frente al período anterior'+(cmp.bajan.length?', sobre todo en '+compListaTxt(cmp.bajan.map(x=>x.n)):'')+'.');
+    else if(dif>=3) rec.push('Su promedio subió '+dif+' puntos frente al período anterior'+(cmp.suben.length?', con avance en '+compListaTxt(cmp.suben.map(x=>x.n)):'')+'.');
+  }
+  const tr = compTotRep(cmp.rep.act);
+  if(tr>0) reco.push('Dar seguimiento a la conducta ('+tr+' '+(tr===1?'reporte':'reportes')+' en el período'+(p>1 ? ', antes '+compTotRep(cmp.rep.ant) : '')+').');
+  else if(p>1 && compTotRep(cmp.rep.ant)>0) rec.push('No registra reportes disciplinarios en este período.');
+  if(p>1 && cmp.cond.v!==null && cmp.cond.ant!==null){
+    const dc = cmp.cond.v - cmp.cond.ant;
+    if(dc<=-3) reco.push('Su nota de conducta bajó de '+Math.round(cmp.cond.ant)+' a '+Math.round(cmp.cond.v)+'.');
+    else if(dc>=3) rec.push('Su nota de conducta subió de '+Math.round(cmp.cond.ant)+' a '+Math.round(cmp.cond.v)+'.');
+  }
+  const cu = compSub(d.cuesta).map(x=>x.toLowerCase());
+  if(cu.length) reco.push('Reforzar: '+compListaTxt(cu)+'.');
+  if(d.ritmo==='Necesita refuerzo' || d.ritmo==='Lento') reco.push('Respetar su ritmo de aprendizaje con actividades de refuerzo.');
+  if(d.rinde && d.rinde!=='Solo') reco.push('Rinde mejor '+d.rinde.toLowerCase()+'; conviene aprovecharlo.');
+  const dif = compSub(d.dificultad).map(x=>x.toLowerCase());
+  if(dif.length) reco.push('Principal dificultad: '+compListaTxt(dif)+'.');
+  const dist = compSub(d.distrae).filter(x=>x!=='Nada').map(x=>x.toLowerCase());
+  if(dist.length) reco.push('Cuidar lo que lo distrae ('+compListaTxt(dist)+').');
+  const sn = compSub(d.senales).filter(x=>x!=='Ninguna').map(x=>x.toLowerCase());
+  if(sn.length || d.animo==='Decaído' || d.animo==='Ansioso' || d.cambio==='Empeoró') reco.push('Acompañarlo en lo emocional'+(sn.length?' (señales: '+compListaTxt(sn)+')':'')+'.');
+  if(d.f_resp==='Pocas veces' || d.f_resp==='No responde' || d.f_agenda==='Rara vez' || d.f_agenda==='Nunca') reco.push('Mantener comunicación con la familia y pedir que revise la agenda.');
+  if(d.f_tareas && Number(d.f_tareas)<=2) reco.push('Pedir más apoyo en las tareas desde casa.');
+  const ap = compSub(d.apoyo);
+  if(ap.length) reco.push('Apoyo aplicado: '+compListaTxt(ap.map(x=>x.toLowerCase()))+(d.funciono?' ('+({'Sí':'funcionó','En parte':'funcionó en parte','No':'no funcionó'}[d.funciono])+')':'')+'.');
+  const mo = compSub(d.motiva).map(x=>x.toLowerCase());
+  if(mo.length) reco.push('Aprovechar lo que lo motiva: '+compListaTxt(mo)+'.');
+  return {rec, reco};
+}
+/* ---- pantalla ---- */
+function compAttr(s){ return String(s).replace(/&/g,'&amp;').replace(/'/g,'&#39;').replace(/"/g,'&quot;'); }
+function compPill(estId, p, f, edit){
+  const v = compFicha(estId, p)[f.key];
+  const dis = edit ? '' : 'disabled';
+  if(f.tipo==='s') return `<div class="as-sc">${[1,2,3,4,5].map(n=>`<button class="as-n ${Number(v)===n?'on':''}" ${dis} onclick="compEscala('${estId}',${p},'${f.key}',${n})">${n}</button>`).join('')}</div>`;
+  if(f.tipo==='o') return f.ops.map(op=>`<button class="as-p ${v===op?'on':''}" ${dis} onclick="compElegir('${estId}',${p},'${f.key}','${compAttr(op)}')">${esc(op)}</button>`).join('');
+  const arr = compSub(v);
+  return f.ops.map(op=>`<button class="as-p as-ch ${arr.indexOf(op)>=0?'on':''}" ${dis} onclick="compMarcar('${estId}',${p},'${f.key}','${compAttr(op)}')">${esc(op)}</button>`).join('');
+}
+function compAutoHtml(estId, p, key){
+  if(key==='reportes'){
+    const c = carReportes(estId, p), t = compTotRep(c);
+    return `<div class="as-au">⚙ Automático · ${t ? t+' '+(t===1?'reporte disciplinario':'reportes disciplinarios')+' en el período ('+carReportesTexto(c)+')' : 'Sin reportes disciplinarios en el período'}</div>`;
+  }
+  const lista = (DB.reportes||[]).filter(r=>r.estId===estId && carEnPeriodo(r.fecha, p));
+  if(!lista.length) return `<div class="as-au">⚙ Automático · Ninguna situación registrada en el período</div>`;
+  const cuenta = {};
+  lista.forEach(r=>{ const ss = (Array.isArray(r.situaciones) && r.situaciones.length) ? r.situaciones : [carNivelCodigo(r.nivel) ? 'Reporte '+carNivelCodigo(r.nivel) : 'Reporte']; ss.forEach(k=>{ cuenta[k] = (cuenta[k]||0)+1; }); });
+  return `<div class="as-au">⚙ Automático · ${Object.entries(cuenta).map(([k,v])=>esc(String(k))+' ('+v+')').join(' · ')}</div>`;
+}
+function compCompHtml(estId, p, grado){
+  const c = compComparativa(estId, p, grado);
+  const fl = (v, a)=>{
+    if(v===null || a===null || a===undefined) return '';
+    const d = v-a; if(Math.abs(d)<0.5) return ' <span class="as-eq">=</span>';
+    return ` <span class="${d>0?'as-up':'as-dn'}">${d>0?'▲':'▼'} ${Math.round(Math.abs(d))}</span>`;
+  };
+  const nivel = c.nivel ? `<div class="as-nv ${c.nivel.ok?'ok':'mal'}"><b>${c.nivel.nivel}.</b> ${esc(c.nivel.txt)}</div>` : `<div class="as-au">Todavía no hay notas en este período.</div>`;
+  const cb = (c.suben.length || c.bajan.length) ? `<small>${c.suben.length?'Subió: '+c.suben.map(x=>esc(x.n)+' (+'+x.d+')').join(', ')+'. ':''}${c.bajan.length?'Bajó: '+c.bajan.map(x=>esc(x.n)+' ('+x.d+')').join(', ')+'.':''}</small>` : '';
+  const tr = compTotRep(c.rep.act);
+  return `<div class="card"><div class="card-title">Automático: notas y conducta${p>1?' · comparado con el período anterior':''}</div>
+    ${nivel}
+    <div class="as-au"><b>Notas:</b> promedio ${c.promedio!==null?c.promedio.toFixed(0):'—'}${p>1?' (antes '+(c.ant!==null?c.ant.toFixed(0):'—')+')'+fl(c.promedio,c.ant):''}${cb}</div>
+    <div class="as-au"><b>Conducta:</b> ${c.cond.v!==null?Math.round(c.cond.v):'—'}${p>1 && c.cond.ant!==null?' (antes '+Math.round(c.cond.ant)+')'+fl(c.cond.v,c.cond.ant):''} · ${tr} ${tr===1?'reporte':'reportes'}${p>1?' (antes '+compTotRep(c.rep.ant)+')':''}</div>
+    <div class="as-au"><b>Inasistencias (boleta):</b> ${c.inas.v!==null?esc(String(c.inas.v)):'—'}${p>1 && c.inas.ant!==null?' (antes '+esc(String(c.inas.ant))+')':''}</div></div>`;
+}
+function renderComplemento(){
+  const grados = gradosBoleta(currentUser);
+  if(!grados.length) return `<div class="card"><p class="empty">Esta sección la llenan Dirección y el docente orientador de cada aula. No tienes un grado de orientación asignado.</p></div>`;
+  const grado = carGradoSel(), p = carPeriodoSel();
+  const edit = puedeEditarBoleta(grado);
+  const ests = ordenarEstudiantes(estudiantesDelGrado(grado, p), getPref('ordenEst','apellidos'));
+  let estId = getPref('compEst',''); if(!ests.some(e=>e.id===estId)) estId = ests[0] ? ests[0].id : '';
+  const est = ests.find(e=>e.id===estId);
+  const filtros = `<div class="filters">
+    <div class="field"><label>Aula</label><select onchange="setPref('carGradoSel',this.value)">${grados.map(g=>`<option ${g===grado?'selected':''}>${esc(g)}</option>`).join('')}</select></div>
+    <div class="field"><label>Período</label><select onchange="setPref('carPer',this.value)">${[1,2,3,4].map(n=>`<option value="${n}" ${n===p?'selected':''}>Período ${n}</option>`).join('')}</select></div>
+    <div class="field"><label>Estudiante</label><select onchange="setPref('compEst',this.value)">${ests.map((e,i)=>`<option value="${e.id}" ${e.id===estId?'selected':''}>${i+1}. ${esc(asisNombre(e))}</option>`).join('')}</select></div></div>`;
+  const head = `<div class="page-head"><p class="page-eyebrow">Reportes</p><h1 class="page-title">Complementar caracterización</h1>
+    <p class="page-desc">Solo sirve para enriquecer los comentarios de <b>Reconocimiento</b> y <b>Recomendación</b> de la Caracterización. No la reemplaza y no se imprime con ella. Todo es opción múltiple o se llena solo.</p></div>`;
+  if(!est) return head + filtros + `<div class="card"><p class="empty">No hay estudiantes en esta aula.</p></div>`;
+  const areas = COMP_ESQUEMA.map(a=>`<div class="card"><div class="card-title">${esc(a.area)}</div>` + a.filas.map(f=>{
+    const kind = {o:'elige una', c:'marca varias', s:'escala 1 a 5', auto:'se llena solo'}[f.tipo];
+    const cuerpo = f.tipo==='auto' ? compAutoHtml(estId, p, f.key) : compPill(estId, p, f, edit);
+    return `<div class="as-it">${esc(f.label)}<small>${kind}</small><div>${cuerpo}</div></div>`;
+  }).join('') + `</div>`).join('');
+  const partes = carComplementoPartes(estId, p, grado);
+  const vacio = '<span class="nota-chica">Aún no hay datos para armarlo.</span>';
+  const salida = `<div class="card" style="border:2px solid var(--primary)"><div class="card-title">Comentarios armados con lo contestado</div>
+    <p style="font-size:13px;line-height:1.5"><b>Reconocimiento:</b> ${partes.rec.length?esc(partes.rec.join(' ')):vacio}</p>
+    <p style="font-size:13px;line-height:1.5"><b>Recomendación:</b> ${partes.reco.length?esc(partes.reco.join(' ')):vacio}</p>
+    <p class="nota-chica">Estas frases se suman solas a Reconocimiento y Recomendación en la pestaña Caracterización (sin borrar lo que ya está).</p></div>`;
+  return head + filtros + compCompHtml(estId, p, grado) + areas + salida;
+}
+
 const NAV_ITEMS = [
   {id:'panel', label:'Panel principal'},
   {id:'estudiantes', label:'Estudiantes'},
   {id:'reportes', label:'Conducta'},
+  {id:'asistencia', label:'Asistencia'},
   {id:'hojas', label:'Hojas de tareas'},
   {id:'calificaciones', label:'Calificaciones'},
   {id:'tareas', label:'Registro y alertas de tareas'},
@@ -4707,6 +5246,7 @@ const NAV_ITEMS = [
   {id:'personalizar', label:'Personalizar'},
 ];
 function navAllowed(id){
+  if(id==='asistencia') return asisPuede();
   if(id==='bitacora') return canManageAcademicData(currentUser);
   if(id==='personalizar') return canManageAcademicData(currentUser) || puedePersonalizarMensajes(currentUser);
   if(id==='docentes') return canManageAcademicData(currentUser);
@@ -4814,6 +5354,7 @@ function renderViewInterno(){
     case 'tareas': return renderTareas();
     case 'boletas': return renderBoletas();
     case 'reportes': return renderReportes();
+    case 'asistencia': return renderAsistencia();
     case 'averias': return renderAverias();
     case 'soporte': return renderSoporte();
     case 'mensajes': return renderMensajes();
@@ -12045,8 +12586,8 @@ function carUnirTexto(base, extra){
   const nuevas = extra.filter(x=>ya.indexOf(x.toLowerCase().replace(/\.$/,'')) < 0);
   return [String(base||'').trim()].concat(nuevas).filter(Boolean).join(' ');
 }
-function carReconocimientoFinal(estId, p, grado){ return carUnirTexto(carSugerirReconocimiento(estId, p, grado), carBoletaPartes(estId, p, grado).rec); }
-function carRecomendacionFinal(estId, p, grado){ return carUnirTexto(carSugerirRecomendacion(estId, p, grado), carBoletaPartes(estId, p, grado).reco); }
+function carReconocimientoFinal(estId, p, grado){ return carUnirTexto(carUnirTexto(carSugerirReconocimiento(estId, p, grado), carBoletaPartes(estId, p, grado).rec), carComplementoPartes(estId, p, grado).rec); }
+function carRecomendacionFinal(estId, p, grado){ return carUnirTexto(carUnirTexto(carSugerirRecomendacion(estId, p, grado), carBoletaPartes(estId, p, grado).reco), carComplementoPartes(estId, p, grado).reco); }
 function carValorTexto(estId, p, key, grado){
   const d = carFicha(estId, p);
   if(d.t && d.t[key]!==undefined) return d.t[key];
@@ -12827,11 +13368,13 @@ function promedioPeriodoEstudiante(estId, grado, periodo){
 
 function renderBoletas(){
   if(!puedeVerPanel(currentUser, 'boletas')) return renderNoAccess();
-  const tab = getPref('bolTab','boletas') === 'caract' ? 'caract' : 'boletas';
+  const tab = ({caract:'caract', comp:'comp'})[getPref('bolTab','boletas')] || 'boletas';
   const barra = `<div style="display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap;">
     <button class="btn ${tab==='boletas'?'btn-primary':''}" id="bol_tab_boletas" onclick="setPref('bolTab','boletas')">Boletas</button>
     <button class="btn ${tab==='caract'?'btn-primary':''}" id="bol_tab_caract" onclick="setPref('bolTab','caract')">Caracterización</button>
+    ${gradosBoleta(currentUser).length>0 ? `<button class="btn ${tab==='comp'?'btn-primary':''}" id="bol_tab_comp" onclick="setPref('bolTab','comp')">Complementar caracterización</button>` : ''}
   </div>`;
+  if(tab==='comp') return barra + renderGuardarManualBanner() + renderComplemento();
   if(tab==='caract'){
     return barra + `<div class="page-head"><p class="page-eyebrow">Reportes</p><h1 class="page-title">Caracterización psicopedagógica</h1>
       <p class="page-desc">Notas y reportes salen solos de la plataforma; el orientador completa conducta, inasistencias, llegadas tardías y la ficha de cada estudiante.</p></div>` + renderCaracterizacion();
