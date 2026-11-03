@@ -510,6 +510,64 @@
   .saludo-grande{ color:#1F2530!important; }
   .page-title,.card-title,h1,h2,h3{ color:#1F2530; }
   label{ color:#5A6478; }
+
+  /* ---------- CELULAR: menú que se abre con el botón ☰ ---------- */
+  .mbar,.mvelo{ display:none; }
+  @media(max-width:760px){
+    .layout{ display:block; min-height:100vh; }
+    .layout::before{ display:none; }
+    .mbar{ display:flex; position:sticky; top:0; z-index:40; align-items:center; gap:12px; padding:10px 14px; background:linear-gradient(180deg,#0F2A60,#0A2150); color:#fff; box-shadow:0 4px 14px rgba(8,32,79,.25); }
+    .mbar button{ border:0; background:rgba(255,255,255,.14); color:#fff; font-size:20px; line-height:1; width:40px; height:40px; border-radius:12px; cursor:pointer; }
+    .mbar .t{ font:600 15px/1.2 'Inter',sans-serif; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .sidebar{ position:fixed!important; left:0; top:0; bottom:0; height:100dvh!important; width:min(84vw,300px)!important; transform:translateX(-105%); transition:transform .25s ease; z-index:60!important; }
+    body.menu-m .sidebar{ background:linear-gradient(180deg,rgba(8,32,79,.98),rgba(15,45,104,.97))!important; transform:none; box-shadow:8px 0 40px rgba(0,0,0,.35); }
+    .mvelo{ position:fixed; inset:0; background:rgba(8,20,50,.45); z-index:55; }
+    body.menu-m .mvelo{ display:block; }
+    .main{ padding:18px 14px 40px!important; max-width:none!important; }
+    .page-title{ font-size:22px!important; }
+    .saludo-grande{ font-size:20px!important; }
+    .page-head{ margin-bottom:18px!important; }
+    .grid-2,.grid-3,.grid-4{ grid-template-columns:1fr!important; }
+  }
+
+  /* ---------- CELULAR: Hoja de tareas, Calificaciones y Boletas ---------- */
+  @media(max-width:760px){
+    .period-tabs{ flex-wrap:wrap; gap:6px; border-bottom:0; }
+    .period-tabs .period-tab{ flex:1 1 calc(25% - 6px); min-width:72px; text-align:center; border:1px solid var(--line-strong); border-radius:10px; padding:9px 6px; }
+    .period-tabs .btn{ flex:1 1 calc(33% - 6px); }
+    .table-wrap{ -webkit-overflow-scrolling:touch; border-radius:10px; box-shadow:inset -14px 0 12px -12px rgba(8,32,79,.22); }
+    .ledger-table td:first-child, .ledger-table th:first-child{ min-width:120px; }
+    .boleta-hoja{ max-width:100%; }
+    .boleta-ident{ flex-wrap:wrap; gap:8px; }
+    .boleta-hoja .bol-tabla, .boleta-hoja .bol-mini{ table-layout:auto; }
+    .boleta-hoja .bol-tabla{ height:auto; }
+    .bol-mat{ white-space:normal; overflow:visible; text-overflow:clip; }
+    .bol-mini td:first-child{ white-space:normal; }
+    .bol-tabla th:first-child{ width:34%; }
+    .bol-in{ min-width:0; }
+    .boleta-firmas{ flex-wrap:wrap; }
+  }
+
+  /* ---------- CELULAR: tablas como en la computadora ---------- */
+@media(max-width:760px){
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  /* Calificaciones: se desliza de lado, con el nombre fijo */
+  .ledger-table td:first-child,.ledger-table th:first-child{position:sticky;left:0;z-index:3;background:#fff;box-shadow:4px 0 8px -4px rgba(8,32,79,.25);min-width:110px;max-width:110px;white-space:normal;font-size:12px}
+  .ledger-table th:first-child{background:var(--panel-2)}
+  /* Hoja de tareas y Caracterización: se ven completas encogidas (se puede acercar con dos dedos) */
+  .hj-tabla{zoom:.46}
+  .table-wrap:not(:has(.ledger-table)){overflow:hidden}
+  .table-wrap:not(:has(.ledger-table)) > table{zoom:.42}
+  /* Boleta completa */
+  .boleta-hoja .bol-tabla{ width:100%!important; table-layout:fixed!important; }
+  .boleta-hoja{ overflow:hidden; }
+  .bol-tabla th:first-child{ width:34%!important; }
+  .bol-tabla th,.bol-tabla td{ padding:4px 2px!important; min-width:0!important; }
+  .bol-tabla th{ font-size:8px!important; letter-spacing:0!important; }
+  .bol-tabla td{ font-size:12px!important; }
+  .boleta-firmas{ flex-wrap:wrap; gap:18px 12px; }
+  .boleta-firmas > div{ flex:1 1 40%; min-width:110px; }
+}
 </style>
 </head>
 <body>
@@ -632,7 +690,7 @@ if('serviceWorker' in navigator){
    Cada entrega lleva un número de versión. Al abrir la plataforma (y cada cierto rato, o al volver a la
    pestaña) se compara con la versión publicada; si es distinta, aparece un aviso discreto abajo.
    Si es la misma, no pasa nada. Súbele el número cada vez que se publique una actualización. */
-const APP_VERSION = '2026-11-03-0140';
+const APP_VERSION = '2026-11-03-0300';
 let _avisoVersionMostrado = false, _ultimaRevisionVersion = 0;
 async function revisarVersionNueva(){
   if(_avisoVersionMostrado) return;
@@ -15251,6 +15309,41 @@ function renderMatriz(){
   render();
   iniciarSync();
   vigilarPromocion();
+})();
+</script>
+<script>
+/* Celular: barra de arriba con el botón ☰ que abre y cierra el menú */
+(function(){
+  function poner(){
+    var l=document.querySelector('.layout'); if(!l){ document.body.classList.remove('menu-m'); return; }
+    if(l.querySelector('.mbar')) return;
+    var b=document.createElement('div'); b.className='mbar';
+    var nombre=''; try{ nombre=(DB.ajustes&&DB.ajustes.nombreColegio)||''; }catch(e){}
+    b.innerHTML='<button type="button" aria-label="Menú">☰</button><span class="t"></span>';
+    b.querySelector('.t').textContent=nombre||'SISTEMA ESCOLAR';
+    b.firstChild.onclick=function(){ document.body.classList.toggle('menu-m'); };
+    var v=document.createElement('div'); v.className='mvelo'; v.onclick=function(){ document.body.classList.remove('menu-m'); };
+    l.insertBefore(v,l.firstChild); l.insertBefore(b,l.firstChild);
+  }
+  new MutationObserver(poner).observe(document.getElementById('app'),{childList:true,subtree:false});
+  document.addEventListener('click',function(e){ var n=e.target.closest&&e.target.closest('.sidebar .nav-item'); if(n) document.body.classList.remove('menu-m'); });
+  poner();
+})();
+</script>
+<script>
+/* Celular: las tablas de Caracterización se encogen para verse completas (mínimo 30%; acerca con dos dedos) */
+(function(){
+  function ajustar(){
+    var m=window.innerWidth<=760;
+    document.querySelectorAll('.main div > table:not([class])').forEach(function(t){
+      t.style.zoom=''; if(!m) return;
+      var w=t.scrollWidth, a=(t.parentElement.clientWidth||window.innerWidth-28);
+      if(w>a){ t.style.zoom=Math.max(.3,a/w).toFixed(2); }
+    });
+  }
+  var app=document.getElementById('app');
+  if(app) new MutationObserver(function(){ ajustar(); }).observe(app,{childList:true,subtree:true});
+  window.addEventListener('resize',ajustar); ajustar();
 })();
 </script>
 </body>
