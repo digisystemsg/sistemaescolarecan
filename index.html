@@ -608,6 +608,40 @@
 .as-nv{border-radius:10px;padding:8px 10px;font-size:13px;margin-bottom:4px}.as-nv.ok{background:#E5F3E9;color:#1F6B3A}.as-nv.mal{background:#FBE5DC;color:#B5552B}
 .as-up{color:#1F6B3A;font-weight:700}.as-dn{color:#B5552B;font-weight:700}.as-eq{color:#6B7487}
 @media(max-width:760px){.as-k4{grid-template-columns:1fr 1fr}.as-g2{grid-template-columns:1fr}.as-b{min-width:64px}}
+
+  /* ---------- COMPUTADORA: inicio con mosaicos y menú ☰ (el celular no cambia) ---------- */
+  .inicio-mosaico{ display:none; }
+  @media(min-width:761px){
+    .layout{ display:block; min-height:100vh; background:#F8FAFE; }
+    .layout::before{ display:none!important; }
+    .mbar{ display:flex; position:sticky; top:0; z-index:40; align-items:center; gap:12px; padding:11px 28px; background:linear-gradient(180deg,#0F2A60,#0A2150); color:#fff; box-shadow:0 4px 14px rgba(8,32,79,.25); }
+    .mbar button{ border:0; background:rgba(255,255,255,.14); color:#fff; font-size:20px; line-height:1; width:40px; height:40px; border-radius:12px; cursor:pointer; }
+    .mbar .t{ font:600 15px/1.2 'Inter',sans-serif; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .sidebar{ position:fixed!important; left:0; top:0; bottom:0; height:100vh!important; width:300px!important; transform:translateX(-105%); transition:transform .25s ease; z-index:60!important; }
+    body.menu-m .sidebar{ background:linear-gradient(180deg,rgba(8,32,79,.62),rgba(15,45,104,.52))!important; -webkit-backdrop-filter:blur(18px) saturate(1.3); backdrop-filter:blur(18px) saturate(1.3); transform:none; box-shadow:8px 0 40px rgba(0,0,0,.25); }
+    .mvelo{ position:fixed; inset:0; background:rgba(8,20,50,.40); z-index:55; }
+    body.menu-m .mvelo{ display:block; }
+    .main{ margin:0 auto!important; padding:26px 34px 60px!important; max-width:1240px!important; }
+    body.en-inicio .mbar{ display:none; }
+    .inicio-mosaico{ display:block; margin-bottom:26px; }
+    .panel-head-orig{ display:none; }
+    .im-top{ display:flex; align-items:center; gap:18px; }
+    .im-logo{ width:84px; height:84px; border-radius:20px; background:#fff; border:1px solid #E1E7F2; box-shadow:0 2px 12px rgba(27,42,65,.07); display:flex; align-items:center; justify-content:center; overflow:hidden; flex:none; }
+    .im-logo img{ max-width:88%; max-height:88%; object-fit:contain; }
+    .im-name{ font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:22px; line-height:1.2; color:#12306E; margin:0; }
+    .im-sub{ font-size:11px; letter-spacing:.12em; color:#6B7487; margin:6px 0 0; text-transform:uppercase; }
+    .im-menu{ margin-left:auto; border:1px solid #C9D2E6; background:#fff; color:#12306E; border-radius:12px; padding:10px 16px; font-weight:600; cursor:pointer; font-size:13px; }
+    .im-hola{ margin:22px 0 14px; } .im-hola small{ display:block; font-size:11px; letter-spacing:.12em; color:#6B7487; } .im-hola b{ font-size:26px; color:#1F2530; }
+    .im-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+    .im-tile{ position:relative; background:#fff; border:1px solid #E1E7F2; border-radius:18px; padding:16px; height:108px; display:flex; flex-direction:column; justify-content:space-between; cursor:pointer; box-shadow:0 2px 10px rgba(27,42,65,.05); transition:transform .15s, box-shadow .15s; font-weight:600; font-size:14px; color:#1F2530; }
+    .im-tile:hover{ transform:translateY(-2px); box-shadow:0 8px 22px rgba(27,42,65,.10); }
+    .im-tile u{ text-decoration:none; font-size:26px; color:#12306E; line-height:1; }
+    .im-tile i{ position:absolute; top:12px; right:12px; background:#B5445A; color:#fff; border-radius:10px; font-size:11px; font-style:normal; font-weight:700; padding:2px 8px; }
+  }
+
+  /* ---------- Navegar con las flechas ---------- */
+  .im-tile:focus-visible,.nav-item:focus-visible,.as-cel:focus-visible,.as-b:focus-visible,.as-p:focus-visible,.as-n:focus-visible{ outline:3px solid #6C8BD6; outline-offset:2px; }
+  input:focus-visible,textarea:focus-visible,select:focus-visible,.btn:focus-visible{ outline:2px solid #6C8BD6; outline-offset:1px; }
 </style>
 </head>
 <body>
@@ -730,7 +764,7 @@ if('serviceWorker' in navigator){
    Cada entrega lleva un número de versión. Al abrir la plataforma (y cada cierto rato, o al volver a la
    pestaña) se compara con la versión publicada; si es distinta, aparece un aviso discreto abajo.
    Si es la misma, no pasa nada. Súbele el número cada vez que se publique una actualización. */
-const APP_VERSION = '2026-11-03-0640';
+const APP_VERSION = '2026-11-03-0950';
 let _avisoVersionMostrado = false, _ultimaRevisionVersion = 0;
 async function revisarVersionNueva(){
   if(_avisoVersionMostrado) return;
@@ -9141,6 +9175,26 @@ function renderVistaEstudianteCard(){
     </div>
   </div>`;
 }
+/* Inicio con mosaicos (solo computadora; en el celular se sigue viendo como antes) */
+const INICIO_ICONOS = {estudiantes:'👥', reportes:'⚑', asistencia:'✓', hojas:'▤', calificaciones:'✎', tareas:'☰', matriz:'▦', boletas:'🎓', docentes:'👩‍🏫', seguimiento:'📋', averias:'🛠', mensajes:'✉', soporte:'💬', bitacora:'📜', personalizar:'⚙'};
+function renderInicioMosaico(){
+  const aj = DB.ajustes || {};
+  const hora = new Date().getHours();
+  const saludo = hora<12 ? 'Buenos días' : (hora<19 ? 'Buenas tardes' : 'Buenas noches');
+  const tiles = NAV_ITEMS.filter(n=>n.id!=='panel' && navAllowed(n.id)).map(n=>{
+    const c = PANELES_NOTIFICABLES.some(p=>p.id===n.id) ? contadorPanelDocente(n.id) : 0;
+    return `<div class="im-tile" onclick="goTo('${n.id}')">${c>0?`<i>${c>99?'99+':c}</i>`:''}<u>${INICIO_ICONOS[n.id]||'•'}</u><span>${esc(n.label)}</span></div>`;
+  }).join('');
+  return `<div class="inicio-mosaico">
+    <div class="im-top">
+      <div class="im-logo">${aj.logo?`<img src="${aj.logo}" alt="Logo">`:'<span style="font-weight:800;color:#12306E">ECAN</span>'}</div>
+      <div><p class="im-name">${esc(aj.nombreColegio || 'Centro Escolar')}</p><p class="im-sub">Año escolar ${esc(aj.anio || String(new Date().getFullYear()))}</p></div>
+      <button class="im-menu" onclick="document.body.classList.toggle('menu-m')">☰ Menú</button>
+    </div>
+    <div class="im-hola"><small>${saludo.toUpperCase()}</small><b>${esc(saludoNombre(currentUser.nombre))}</b></div>
+    <div class="im-grid">${tiles}</div>
+  </div>`;
+}
 function renderPanel(){
   const totalEst = DB.estudiantes.length;
   const totalDoc = DB.docentes.filter(t=>t.tipo==='docente').length;
@@ -9152,8 +9206,8 @@ function renderPanel(){
   const sinConectar = (motor !== 'nube' && motor !== 'compartido') && DB.docentes.length <= 1;
   const misGradosList = misGrados(currentUser);
 
-  return `
-  <div class="page-head">
+  return renderInicioMosaico() + `
+  <div class="page-head panel-head-orig">
     <p class="saludo-grande">Hola, ${esc(saludoNombre(currentUser.nombre))}${saludoDe(currentUser) ? ' (' + esc(saludoDe(currentUser)) + ')' : ''}</p>
     <h1 class="page-title">Panel principal</h1>
     <p class="page-desc">Resumen general del centro escolar y accesos según tu perfil (${esc(domainLabel(currentUser))}).</p>
@@ -15858,7 +15912,8 @@ function renderMatriz(){
 /* Celular: barra de arriba con el botón ☰ que abre y cierra el menú */
 (function(){
   function poner(){
-    var l=document.querySelector('.layout'); if(!l){ document.body.classList.remove('menu-m'); return; }
+    var l=document.querySelector('.layout'); if(!l){ document.body.classList.remove('menu-m'); document.body.classList.remove('en-inicio'); return; }
+    try{ document.body.classList.toggle('en-inicio', currentView==='panel'); }catch(e){}
     if(l.querySelector('.mbar')) return;
     var b=document.createElement('div'); b.className='mbar';
     var nombre=''; try{ nombre=(DB.ajustes&&DB.ajustes.nombreColegio)||''; }catch(e){}
@@ -15887,6 +15942,75 @@ function renderMatriz(){
   var app=document.getElementById('app');
   if(app) new MutationObserver(function(){ ajustar(); }).observe(app,{childList:true,subtree:true});
   window.addEventListener('resize',ajustar); ajustar();
+})();
+</script>
+<script>
+/* Flechas del teclado: se mueven entre casillas, botones, mosaicos y opciones del menú en toda la plataforma.
+   En casillas de texto, izquierda/derecha solo saltan cuando el cursor está al borde (para poder seguir editando). */
+(function(){
+  var SEL='input:not([type=hidden]):not([type=file]),textarea,select,button,a[href],.nav-item,.im-tile,[tabindex="0"]';
+  function visible(el){
+    if(el.disabled) return false;
+    if(el.tabIndex<0 && !el.matches('input,textarea,select,button,a')) return false;
+    var r=el.getBoundingClientRect(); if(r.width<2||r.height<2) return false;
+    var cs=getComputedStyle(el); return cs.visibility!=='hidden' && cs.display!=='none';
+  }
+  function ambito(t){
+    var m=t.closest('.modal-bg,.modal,[role=dialog],.modal-overlay'); if(m) return m;
+    if(document.body.classList.contains('menu-m')){ var sb=document.querySelector('.sidebar'); if(sb) return sb; }
+    return document.querySelector('.main')||document.body;
+  }
+  function siguiente(t,dir){
+    var r0=t.getBoundingClientRect(), cx=r0.left+r0.width/2, cy=r0.top+r0.height/2, mejor=null, mp=1e9;
+    var lista=ambito(t).querySelectorAll(SEL);
+    for(var i=0;i<lista.length;i++){
+      var c=lista[i]; if(c===t||!visible(c)||t.contains(c)||c.contains(t)) continue;
+      if(c.closest('.mbar')&&!t.closest('.mbar')) continue;
+      var r=c.getBoundingClientRect(), x=r.left+r.width/2, y=r.top+r.height/2, dx=x-cx, dy=y-cy, prim, perp;
+      if(dir==='ArrowRight'){ if(r.left<r0.right-4 && dx<=4) continue; prim=Math.max(0,r.left-r0.right); perp=Math.abs(dy); if(dx<=4) continue; }
+      else if(dir==='ArrowLeft'){ if(r.right>r0.left+4 && dx>=-4) continue; prim=Math.max(0,r0.left-r.right); perp=Math.abs(dy); if(dx>=-4) continue; }
+      else if(dir==='ArrowDown'){ if(dy<=4) continue; prim=Math.max(0,r.top-r0.bottom); perp=Math.abs(dx); }
+      else { if(dy>=-4) continue; prim=Math.max(0,r0.top-r.bottom); perp=Math.abs(dx); }
+      /* la fila/columna más cercana manda; entre las de ese mismo nivel, la más alineada */
+      var puntaje=prim+perp*(dir==='ArrowLeft'||dir==='ArrowRight'?3:1.2);
+      if(puntaje<mp){ mp=puntaje; mejor=c; }
+    }
+    return mejor;
+  }
+  function textoLike(t){
+    if(t.tagName==='TEXTAREA') return true;
+    if(t.tagName!=='INPUT') return false;
+    return /^(text|search|tel|url|email|password|)$/i.test(t.type||'');
+  }
+  document.addEventListener('keydown',function(e){
+    if(e.defaultPrevented||e.altKey||e.ctrlKey||e.metaKey||e.shiftKey) return;
+    var k=e.key, t=e.target; if(!t||!t.tagName) return;
+    if(k==='Escape'){ document.body.classList.remove('menu-m'); return; }
+    if((k==='Enter'||k===' ') && t.matches('.nav-item,.im-tile')){ e.preventDefault(); t.click(); return; }
+    if(k!=='ArrowUp'&&k!=='ArrowDown'&&k!=='ArrowLeft'&&k!=='ArrowRight') return;
+    var tag=t.tagName;
+    if(tag==='SELECT') return;                                         /* en menús desplegables las flechas cambian la opción */
+    if(tag==='INPUT' && /^(number|range|color)$/i.test(t.type||'')) return;            /* campos con comportamiento propio de flechas */
+    if(tag==='INPUT' && /^(date|time|datetime-local|month|week)$/i.test(t.type||'') && (k==='ArrowLeft'||k==='ArrowRight')) return;   /* en fechas, izquierda/derecha cambian de parte (día, mes, año) */
+    if(textoLike(t)){
+      var v=t.value||'', a=t.selectionStart, b=t.selectionEnd;
+      if(k==='ArrowLeft'  && !(a===0&&b===0)) return;
+      if(k==='ArrowRight' && !(a===v.length&&b===v.length)) return;
+      if(tag==='TEXTAREA'){
+        if(k==='ArrowUp'   && v.slice(0,a).indexOf('\n')>=0) return;
+        if(k==='ArrowDown' && v.slice(b).indexOf('\n')>=0) return;
+        if(k==='ArrowUp'   && t.scrollTop>0) return;
+      }
+    }
+    var n=siguiente(t,k); if(!n) return;
+    e.preventDefault(); n.focus({preventScroll:false});
+    if(n.scrollIntoView) n.scrollIntoView({block:'nearest',inline:'nearest'});
+    if(n.tagName==='INPUT' && textoLike(n)){ try{ n.select(); }catch(x){} }
+  });
+  /* mosaicos, opciones del menú y casillas de asistencia se pueden alcanzar con el teclado */
+  function marcar(){ document.querySelectorAll('.nav-item,.im-tile').forEach(function(el){ if(!el.hasAttribute('tabindex')) el.setAttribute('tabindex','0'); }); }
+  var app=document.getElementById('app'); if(app) new MutationObserver(marcar).observe(app,{childList:true,subtree:true});
+  marcar();
 })();
 </script>
 </body>
