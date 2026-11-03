@@ -502,6 +502,14 @@
   .nav-item.active{ box-shadow:0 4px 12px rgba(0,0,0,.18), inset 3px 0 0 #12306E!important; }
   .page-head::after{ background:#12306E!important; }
   .brand-sub::after{ background:rgba(255,255,255,.45)!important; }
+
+  /* letras menos azules y fondo más blanco */
+  :root{ --ink:#1F2530; --bg:#F8FAFE; }
+  .layout{ background:#F8FAFE; }
+  .page-eyebrow{ color:#6B7487!important; }
+  .saludo-grande{ color:#1F2530!important; }
+  .page-title,.card-title,h1,h2,h3{ color:#1F2530; }
+  label{ color:#5A6478; }
 </style>
 </head>
 <body>
@@ -624,7 +632,7 @@ if('serviceWorker' in navigator){
    Cada entrega lleva un número de versión. Al abrir la plataforma (y cada cierto rato, o al volver a la
    pestaña) se compara con la versión publicada; si es distinta, aparece un aviso discreto abajo.
    Si es la misma, no pasa nada. Súbele el número cada vez que se publique una actualización. */
-const APP_VERSION = '2026-11-03-0130';
+const APP_VERSION = '2026-11-03-0140';
 let _avisoVersionMostrado = false, _ultimaRevisionVersion = 0;
 async function revisarVersionNueva(){
   if(_avisoVersionMostrado) return;
