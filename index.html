@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cuaderno digital</title>
+<title>SISTEMA ESCOLAR</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icono-192.png">
 <link rel="icon" id="favicon" href="data:,">
@@ -432,6 +432,62 @@
   /* letras del pie del menú más legibles (adultos / personas con lentes) */
   .sidebar-footer :not(button):not(button *):not(#sync-indicator):not(#sync-indicator *):not(.user-avatar){ color:#F2F6FF !important; }
   .sidebar-footer div[onclick*="toggleSidebarFooter"], .sidebar-footer [onclick*="toggleSidebarFooter"] *{ font-size:13px !important; font-weight:600; }
+
+  /* ---------- PORTADA (panel de fondo) ---------- */
+  .portada{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:space-between;gap:6vw;padding:32px 8vw;overflow:hidden;background:#eef1f7}
+  .portada .fondo{position:absolute;inset:-10px;display:flex;filter:blur(3px)}
+  .portada .fondo .sb{width:20%;background:linear-gradient(180deg,#0F2A60,#08204F);border-top:3px solid #C62836;padding:18px 14px;display:flex;flex-direction:column;gap:12px}
+  .portada .fondo .sb s{display:block;height:11px;border-radius:6px;background:rgba(255,255,255,.2)}
+  .portada .fondo .sb s:first-child{height:18px;width:70%;background:rgba(255,255,255,.5);margin-bottom:10px}
+  .portada .fondo .mn{flex:1;padding:28px;display:grid;grid-template-columns:repeat(4,1fr);gap:16px;align-content:start}
+  .portada .fondo .mn div{background:#fff;border:1px solid #E0E6F0;border-top:3px solid #12306E;border-radius:12px;height:96px}
+  .portada .fondo .mn div.w{grid-column:1/-1;height:150px;border-top-color:#C62836}
+  .portada .velo{position:absolute;inset:0;background:linear-gradient(100deg,rgba(8,32,79,.93),rgba(10,33,80,.66) 60%,rgba(10,33,80,.5))}
+  .portada .bienv{position:relative;color:#fff;max-width:520px}
+  .portada .bienv .login-logo{max-height:72px;width:auto;margin:0 0 4px;display:block;background:#fff;border-radius:14px;padding:6px}
+  .portada .bienv .eb{font:700 11px 'Inter',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#f1b4ba;margin-top:14px}
+  .portada .bienv h1{color:#fff;font-size:clamp(30px,3.8vw,46px);line-height:1.08;margin:8px 0 0}
+  .portada .bienv h1::after{content:"";display:block;width:56px;height:3px;background:#C62836;margin-top:16px;border-radius:2px}
+  .portada .login-card{position:relative;width:100%;flex:none;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);border-radius:22px;padding:26px;box-shadow:none;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#fff}
+  .portada .login-card::before{display:none}
+  .portada .login-card h2{font-size:24px;margin:0 0 16px;color:#fff}
+  .portada .login-sub{display:none}
+  .portada .period-tabs{display:flex;gap:0;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.25);border-radius:14px;padding:4px;margin:0 0 20px!important;border-bottom:1px solid rgba(255,255,255,.25)}
+  .portada .period-tab{flex:1;display:flex;align-items:center;justify-content:center;white-space:nowrap;text-align:center;padding:11px 4px;font:600 13.5px 'Inter',sans-serif;color:#dbe5fa;border-radius:11px;border:0;background:transparent;margin:0;cursor:pointer}
+  .portada .period-tab.active{background:#fff;color:#12306E;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+  .portada .field.fl{background:#fff;border-radius:14px;padding:12px 16px;margin:0 0 12px;box-shadow:0 6px 18px rgba(0,0,0,.2);border-left:4px solid #12306E;color:#14213D}
+  .portada .fl small{display:block;font:600 11px 'Inter',sans-serif;color:#667489;letter-spacing:.06em;text-transform:uppercase}
+  .portada .fl input{border:0!important;padding:2px 0 0!important;font:500 16px 'Inter',sans-serif!important;background:transparent!important;outline:none!important;box-shadow:none!important;color:#14213D;width:100%}
+  .portada .fl input::placeholder{color:#9aa8c4}
+  .portada .btn-row{margin-top:18px}
+  .portada .login-card .btn-primary{width:100%;display:block;text-align:center;padding:15px;font-size:16px;border-radius:14px;border:1px solid rgba(255,255,255,.25);box-shadow:0 8px 20px rgba(0,0,0,.35)}
+  .portada .colform{position:relative;width:380px;max-width:100%;flex:none}
+  .portada .colform .btn-row[style]{border-top:0!important;margin:12px 0 0!important;padding:0!important;justify-content:center}
+  .portada .colform .btn-sm{background:transparent;border:0;color:#dbe5fa;box-shadow:none}
+  .portada .login-card p[style*="--red"]{color:#ffb4bb!important}
+  @media(max-width:820px){
+    body:has(.portada){background:#BCC8DE}
+    .portada{flex-direction:column;justify-content:flex-start;align-items:stretch;gap:30px;padding:56px 24px 28px;background:#F1F5FB;margin:16px;min-height:calc(100vh - 32px);border-radius:34px;box-shadow:0 12px 34px rgba(8,32,79,.18)}
+    .portada .fondo{filter:blur(5px)}
+    .portada .fondo .sb{display:none}.portada .fondo .mn{grid-template-columns:1fr 1fr;padding:30px;gap:14px}
+    .portada .fondo .mn div{background:#DCE5F4;height:110px}.portada .fondo .mn div.w{height:150px}
+    .portada .velo{background:rgba(241,245,251,.5)}
+    .portada .bienv{max-width:none;color:#14213D}
+    .portada .bienv .login-logo{max-height:60px;margin:0;background:transparent;padding:0;border-radius:0;mix-blend-mode:multiply}
+    .portada .bienv .eb{color:#C62836;margin-top:18px}
+    .portada .bienv h1{color:#14213D;font-size:29px;font-weight:700;margin:6px 0 0}
+    .portada .bienv h1::after{margin-top:14px}
+    .portada .colform{width:100%}
+    .portada .login-card{background:rgba(255,255,255,.38);border:1px solid rgba(255,255,255,.9);border-radius:22px;padding:16px;box-shadow:0 14px 34px rgba(8,32,79,.1);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#14213D}
+    .portada .login-card h2{display:none}
+    .portada .period-tabs{background:rgba(226,233,245,.7);border:1px solid rgba(255,255,255,.6);margin-bottom:18px!important}
+    .portada .period-tab{color:#667489}.portada .period-tab.active{background:#fff;color:#12306E;box-shadow:0 2px 6px rgba(27,42,65,.12)}
+    .portada .field.fl{background:rgba(255,255,255,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.85);border-left:4px solid #12306E;box-shadow:0 4px 14px rgba(27,42,65,.07)}
+    .portada .fl small{color:#556178}.portada .fl input{color:#14213D}.portada .fl input::placeholder{color:#7d8aa3}
+    .portada .login-card .btn-primary{border:0;box-shadow:0 8px 18px rgba(18,48,110,.28)}
+    .portada .login-card p[style*="--red"]{color:#C62836!important}
+    .portada .colform .btn-sm{color:#12306E;font-weight:600}
+  }
 </style>
 </head>
 <body>
@@ -3945,7 +4001,7 @@ function badgeClass(t){
 function render(){
   const app = document.getElementById('app');
   try{
-    if(DB.ajustes && DB.ajustes.nombreColegio){ try{ document.title = DB.ajustes.nombreColegio; }catch(eT){} }
+    /* el título de la pestaña se queda como SISTEMA ESCOLAR */
     try{ ponerFavicon(); }catch(eF){}
     if(versionRechazada){ app.innerHTML = renderVersionObsoleta(); return; }
     if(!currentUser){ app.innerHTML = renderLogin(); activarOrtografia(); return; }
@@ -4013,21 +4069,29 @@ function renderLogin(){
   }
 
   return `
-  <div class="login-wrap">
+  <div class="login-wrap portada">
+    <div class="fondo" aria-hidden="true"><div class="sb"><s></s><s></s><s></s><s></s><s></s><s></s></div><div class="mn"><div class="w"></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div></div>
+    <div class="velo"></div>
+    <div class="bienv">
+      ${aj.logo?`<img src="${aj.logo}" alt="Logo" class="login-logo">`:''}
+      <div class="eb">SISTEMA ESCOLAR</div>
+      <h1 onclick="tocarTitulo()" style="cursor:default;">${esc(aj.nombreColegio || 'Centro Escolar')}</h1>
+    </div>
+    <div class="colform">
     <div class="login-card">
-      ${cabecera}
+      <h2>Bienvenido</h2>
       <div class="period-tabs" style="margin-bottom:16px;">
-        <div class="period-tab ${!viewState.loginEstudiante?'active':''}" onclick="viewState.loginEstudiante=false; viewState.errorLoginDocente=''; render();">Docentes y administración</div>
+        <div class="period-tab ${!viewState.loginEstudiante?'active':''}" onclick="viewState.loginEstudiante=false; viewState.errorLoginDocente=''; render();">Docentes y admin.</div>
         <div class="period-tab ${viewState.loginEstudiante?'active':''}" onclick="viewState.loginEstudiante=true; viewState.errorLoginEstudiante=''; render();">Estudiantes</div>
       </div>
       ${viewState.loginEstudiante ? `
       <p class="login-sub">Ingresa el usuario y la contraseña que te dio tu escuela.</p>
       <form onsubmit="event.preventDefault(); entrarComoEstudianteLogin();">
-        <div class="field">
-          <input type="text" id="est_usuario_input" placeholder="Usuario" autocomplete="username">
+        <div class="field fl"><small>Usuario</small>
+          <input type="text" id="est_usuario_input" placeholder="Tu usuario" autocomplete="username">
         </div>
-        <div class="field">
-          <input type="password" id="est_clave_input" placeholder="Contraseña" autocomplete="current-password">
+        <div class="field fl"><small>Contraseña</small>
+          <input type="password" id="est_clave_input" placeholder="••••••••" autocomplete="current-password">
         </div>
         ${viewState.errorLoginEstudiante?`<p style="color:var(--red); font-size:13px; margin:-4px 0 12px;">${esc(viewState.errorLoginEstudiante)}</p>`:''}
         <div class="btn-row">
@@ -4037,11 +4101,11 @@ function renderLogin(){
       ` : `
       <p class="login-sub">Ingresa tu usuario (o tu nombre completo, como lo tenga registrado la escuela) y tu contraseña.</p>
       <form onsubmit="event.preventDefault(); entrarComoDocenteLogin();">
-        <div class="field">
-          <input type="text" id="doc_usuario_input" placeholder="Usuario" autocomplete="username">
+        <div class="field fl"><small>Usuario</small>
+          <input type="text" id="doc_usuario_input" placeholder="Tu usuario" autocomplete="username">
         </div>
-        <div class="field">
-          <input type="password" id="doc_clave_input" placeholder="Contraseña (si tienes)" autocomplete="current-password">
+        <div class="field fl"><small>Contraseña</small>
+          <input type="password" id="doc_clave_input" placeholder="••••••••" autocomplete="current-password">
         </div>
         ${viewState.errorLoginDocente?`<p style="color:var(--red); font-size:13px; margin:-4px 0 12px;">${esc(viewState.errorLoginDocente)}</p>`:''}
         <div class="btn-row">
@@ -4049,6 +4113,7 @@ function renderLogin(){
         </div>
       </form>
       `}
+    </div>
       ${!appYaInstalada()?`<div class="btn-row" style="margin-top:14px; border-top:1px solid var(--line); padding-top:14px;">
         <button class="btn btn-sm" onclick="instalarApp()">📲 Instalar esta app</button>
       </div>`:''}

@@ -1,7 +1,7 @@
 {
-  "name": "Cuaderno digital",
-  "short_name": "Cuaderno",
-  "description": "Cuaderno digital docente",
+  "name": "SISTEMA ESCOLAR",
+  "short_name": "Sist. Escolar",
+  "description": "Sistema escolar",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
