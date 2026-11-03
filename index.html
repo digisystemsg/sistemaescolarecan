@@ -491,10 +491,17 @@
 
   /* ---------- MENÚ LATERAL CON TRANSPARENCIA ---------- */
   .layout{position:relative;background:#F2F5FB}
-  .layout::before{content:"";position:fixed;left:-120px;top:-100px;width:620px;height:900px;z-index:0;pointer-events:none;
-    background:radial-gradient(closest-side at 40% 22%,#2A5CA8 0,rgba(42,92,168,0) 100%),radial-gradient(closest-side at 60% 52%,#6FA0E8 0,rgba(111,160,232,0) 100%);opacity:.75}
+  .layout::before{content:"";position:fixed;left:0;top:0;width:230px;height:100vh;z-index:0;pointer-events:none;
+    background:radial-gradient(closest-side at 50% 22%,#2A5CA8 0,rgba(42,92,168,0) 100%),radial-gradient(closest-side at 55% 60%,#6FA0E8 0,rgba(111,160,232,0) 100%);opacity:.75}
+  @media(max-width:900px){ .layout::before{width:190px} }
   .sidebar{z-index:2;background:linear-gradient(180deg,rgba(8,32,79,.80),rgba(15,45,104,.72))!important;backdrop-filter:blur(16px) saturate(1.2);-webkit-backdrop-filter:blur(16px) saturate(1.2)}
   .main{position:relative;z-index:1}
+
+  /* menos rojo en el panel de adentro */
+  .sidebar{ border-top:3px solid rgba(255,255,255,.28)!important; }
+  .nav-item.active{ box-shadow:0 4px 12px rgba(0,0,0,.18), inset 3px 0 0 #12306E!important; }
+  .page-head::after{ background:#12306E!important; }
+  .brand-sub::after{ background:rgba(255,255,255,.45)!important; }
 </style>
 </head>
 <body>
@@ -4423,7 +4430,7 @@ function renderAprobarBienvenidas(){
       <textarea id="bienv_${k}" rows="4" style="width:100%;">${esc(bienvenidaPropuesta(k))}</textarea>
       <div class="btn-row"><button class="btn btn-primary" onclick="bienvenidaAprobar('${k}')">Aprobar</button><button class="btn" onclick="bienvenidaOtro('${k}')">Proponer otro mensaje</button></div>
     </div>`;}).join('');
-  return `<div class="card" style="border-left:4px solid ${pendientes?'#C62836':'var(--primary)'};">
+  return `<div class="card" style="border-left:4px solid var(--primary);">
     <h3 class="card-title">💌 Mensaje de bienvenida de la semana ${pendientes?`<span class="pill pill-gold">${pendientes} por aprobar</span>`:'<span class="pill pill-primary">Todo aprobado</span>'}</h3>
     <p class="nota-chica" style="margin:0 0 10px;">Los docentes ven este mensaje al entrar. Puedes editarlo antes de aprobarlo; solo sale cuando lo apruebas.</p>
     ${bloques}</div>`;
