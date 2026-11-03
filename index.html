@@ -623,8 +623,6 @@
     body.menu-m .mvelo{ display:block; }
     .main{ margin:0 auto!important; padding:26px 34px 60px!important; max-width:1240px!important; }
     body.en-inicio .mbar{ display:none; }
-    .inicio-mosaico{ display:block; margin-bottom:26px; }
-    .panel-head-orig{ display:none; }
     .im-top{ display:flex; align-items:center; gap:18px; }
     .im-logo{ width:84px; height:84px; border-radius:20px; background:#fff; border:1px solid #E1E7F2; box-shadow:0 2px 12px rgba(27,42,65,.07); display:flex; align-items:center; justify-content:center; overflow:hidden; flex:none; }
     .im-logo img{ max-width:88%; max-height:88%; object-fit:contain; }
@@ -769,7 +767,7 @@ if('serviceWorker' in navigator){
    Cada entrega lleva un número de versión. Al abrir la plataforma (y cada cierto rato, o al volver a la
    pestaña) se compara con la versión publicada; si es distinta, aparece un aviso discreto abajo.
    Si es la misma, no pasa nada. Súbele el número cada vez que se publique una actualización. */
-const APP_VERSION = '2026-11-03-1015';
+const APP_VERSION = '2026-11-03-1235';
 let _avisoVersionMostrado = false, _ultimaRevisionVersion = 0;
 async function revisarVersionNueva(){
   if(_avisoVersionMostrado) return;
@@ -9211,7 +9209,7 @@ function renderPanel(){
   const sinConectar = (motor !== 'nube' && motor !== 'compartido') && DB.docentes.length <= 1;
   const misGradosList = misGrados(currentUser);
 
-  return renderInicioMosaico() + `
+  return `
   <div class="page-head panel-head-orig">
     <p class="saludo-grande">Hola, ${esc(saludoNombre(currentUser.nombre))}${saludoDe(currentUser) ? ' (' + esc(saludoDe(currentUser)) + ')' : ''}</p>
     <h1 class="page-title">Panel principal</h1>
@@ -15918,7 +15916,7 @@ function renderMatriz(){
 (function(){
   function poner(){
     var l=document.querySelector('.layout'); if(!l){ document.body.classList.remove('menu-m'); document.body.classList.remove('en-inicio'); return; }
-    try{ document.body.classList.toggle('en-inicio', currentView==='panel'); }catch(e){}
+    try{ document.body.classList.remove('en-inicio'); }catch(e){}
     if(l.querySelector('.mbar')) return;
     var b=document.createElement('div'); b.className='mbar';
     var nombre=''; try{ nombre=(DB.ajustes&&DB.ajustes.nombreColegio)||''; }catch(e){}
