@@ -767,7 +767,7 @@ if('serviceWorker' in navigator){
    Cada entrega lleva un número de versión. Al abrir la plataforma (y cada cierto rato, o al volver a la
    pestaña) se compara con la versión publicada; si es distinta, aparece un aviso discreto abajo.
    Si es la misma, no pasa nada. Súbele el número cada vez que se publique una actualización. */
-const APP_VERSION = '2026-11-04-1045';
+const APP_VERSION = '2026-11-04-1230';
 let _avisoVersionMostrado = false, _ultimaRevisionVersion = 0;
 async function revisarVersionNueva(){
   if(_avisoVersionMostrado) return;
@@ -4792,13 +4792,14 @@ function asisFechaCorta(iso){
   const d = new Date(iso+'T00:00:00Z'); return d.getUTCDate()+' '+m[d.getUTCMonth()];
 }
 function asisNombreDia(iso){ return ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][asisDiaSemana(iso)]; }
-/* Rango del período: inicio configurado por Dirección; fin = día antes del siguiente inicio (o 13 semanas) */
+/* Rango del período: inicio y fin configurados por Dirección; si no hay fin, el día antes del siguiente inicio (o 13 semanas) */
 function asisRango(p){
   const f = (DB.config.periodosFechas||[]);
   const ini = f[p-1] && f[p-1].inicio;
   if(!ini) return null;
   const sig = f[p] && f[p].inicio;
-  const fin = (sig && sig > ini) ? asisSumaDias(sig, -1) : asisSumaDias(ini, 13*7-1);
+  const finCfg = f[p-1] && f[p-1].fin;
+  const fin = (finCfg && finCfg >= ini) ? finCfg : ((sig && sig > ini) ? asisSumaDias(sig, -1) : asisSumaDias(ini, 13*7-1));
   return {ini, fin};
 }
 /* Semanas (lunes a viernes) del período */
@@ -10743,13 +10744,14 @@ function fechaInicioPeriodo(periodo, grado, asigId){
 function guardarFechasPeriodos(){
   const fechas = [1,2,3,4].map(p=>{
     const el = document.getElementById('per_inicio_' + p);
-    return {inicio: el ? el.value : ''};
+    const ef = document.getElementById('per_fin_' + p);
+    return {inicio: el ? el.value : '', fin: ef ? ef.value : ''};
   });
   commit(doc=>{
     doc.config = doc.config || {};
     doc.config.periodosFechas = fechas;
   });
-  registrar('Personalizar', 'Actualizó las fechas de inicio de los períodos');
+  registrar('Personalizar', 'Actualizó las fechas de inicio y final de los períodos');
   showToast('Fechas guardadas.');
   render();
 }
@@ -10820,12 +10822,18 @@ function renderFechasPeriodosCard(){
   const fechas = DB.config.periodosFechas || [];
   return `
   <div class="card">
-    <p class="card-title">Fecha de inicio de cada período</p>
+    <p class="card-title">Fecha de inicio y final de cada período</p>
     <p class="nota-chica" style="margin:-4px 0 10px;">Solo un usuario de acceso total puede cambiar esto — los docentes no la ven ni la pueden tocar. A partir de esta fecha se exige la Hoja de tareas completa de ese período.</p>
     <div class="grid grid-4">
       ${[1,2,3,4].map(p=>`
-        <div class="field"><label>Período ${p}</label>
+        <div class="field"><label>Período ${p} · inicia</label>
           <input type="date" id="per_inicio_${p}" value="${esc((fechas[p-1]&&fechas[p-1].inicio)||'')}"></div>
+      `).join('')}
+    </div>
+    <div class="grid grid-4" style="margin-top:10px;">
+      ${[1,2,3,4].map(p=>`
+        <div class="field"><label>Período ${p} · finaliza</label>
+          <input type="date" id="per_fin_${p}" value="${esc((fechas[p-1]&&fechas[p-1].fin)||'')}"></div>
       `).join('')}
     </div>
     <div class="btn-row"><button class="btn btn-primary" onclick="guardarFechasPeriodos()">Guardar fechas</button></div>
