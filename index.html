@@ -645,6 +645,17 @@
 @media(min-width:761px){
  body:not(.en-inicio) .main .page-head{ position:relative; padding-right:130px; min-height:100px; background-image:var(--logo-url,none); background-repeat:no-repeat; background-position:right 0 top 2px; background-size:96px 96px; }
 }
+
+@media(max-width:760px){
+ .as-aus thead{display:none}
+ .as-aus,.as-aus tbody,.as-aus tr{display:block;width:100%}
+ .as-aus tr{border:1px solid var(--line-strong);border-radius:12px;margin:0 0 10px;padding:8px 10px;background:#fff}
+ .as-aus td{display:block;border:none!important;text-align:left!important;padding:2px 0!important;width:auto!important}
+ .as-aus td:nth-child(1),.as-aus td:nth-child(2){display:inline-block;font-weight:700;color:#12306E}
+ .as-aus td:nth-child(2)::before{content:" · N° "}
+ .as-aus td:nth-child(3){font-size:15px;font-weight:600}
+ .as-aus td:nth-child(4){padding-top:6px!important}
+}
 </style>
 </head>
 <body>
@@ -767,7 +778,7 @@ if('serviceWorker' in navigator){
    Cada entrega lleva un número de versión. Al abrir la plataforma (y cada cierto rato, o al volver a la
    pestaña) se compara con la versión publicada; si es distinta, aparece un aviso discreto abajo.
    Si es la misma, no pasa nada. Súbele el número cada vez que se publique una actualización. */
-const APP_VERSION = '2026-11-04-1230';
+const APP_VERSION = '2026-11-04-1310';
 let _avisoVersionMostrado = false, _ultimaRevisionVersion = 0;
 async function revisarVersionNueva(){
   if(_avisoVersionMostrado) return;
@@ -2655,7 +2666,7 @@ function combinarDocs(local, nube, preferirNube){
     },
     pausa: nube.pausa || local.pausa || {activa:false},
     presencia: Object.assign({}, local.presencia||{}, nube.presencia||{}),
-    asistencia: {reg:Object.assign({}, (local.asistencia||{}).reg||{}, (nube.asistencia||{}).reg||{}), mot:Object.assign({}, (local.asistencia||{}).mot||{}, (nube.asistencia||{}).mot||{}), libre:Object.assign({}, (local.asistencia||{}).libre||{}, (nube.asistencia||{}).libre||{})},
+    asistencia: {reg:Object.assign({}, (local.asistencia||{}).reg||{}, (nube.asistencia||{}).reg||{}), mot:Object.assign({}, (local.asistencia||{}).mot||{}, (nube.asistencia||{}).mot||{}), libre:Object.assign({}, (local.asistencia||{}).libre||{}, (nube.asistencia||{}).libre||{}), obs:Object.assign({}, (local.asistencia||{}).obs||{}, (nube.asistencia||{}).obs||{})},
     complemento: Object.assign({}, local.complemento||{}, nube.complemento||{}),
     accesos: (nube.accesos||[]).concat((local.accesos||[]).filter(l=>!(nube.accesos||[]).some(x=>x.ts===l.ts&&x.id===l.id))).slice(-400),
     avisos: (nube.avisos||[]).concat((local.avisos||[]).filter(l=>!(nube.avisos||[]).some(x=>x.id===l.id))).slice(-40),
@@ -4783,7 +4794,7 @@ function doLogout(){
 const ASIS_MOTIVOS_A = ['Enfermedad','Asunto familiar','Viaje','Transporte','Sin aviso','Otro'];
 const ASIS_MOTIVOS_J = ['Cita médica','Enfermedad','Asunto familiar','Permiso de la escuela','Otro'];
 const ASIS_COD = {P:'Presente', T:'Tardía', A:'Ausente', J:'Justif.'};
-function asisDatos(){ if(!DB.asistencia) DB.asistencia = {}; const a = DB.asistencia; a.reg = a.reg||{}; a.mot = a.mot||{}; a.libre = a.libre||{}; return a; }
+function asisDatos(){ if(!DB.asistencia) DB.asistencia = {}; const a = DB.asistencia; a.reg = a.reg||{}; a.mot = a.mot||{}; a.libre = a.libre||{}; a.obs = a.obs||{}; return a; }
 function asisPuede(){ return !!currentUser && puedeCambiarVista(currentUser); }
 function asisSumaDias(iso, n){ const d = new Date(iso+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); }
 function asisDiaSemana(iso){ return new Date(iso+'T00:00:00Z').getUTCDay(); }   // 0 dom ... 6 sáb
@@ -4927,6 +4938,100 @@ function asisDiaSel(sem){
   const hoy = hoyISO(); return sem.indexOf(hoy)>=0 ? hoy : sem[0];
 }
 function asisChip(cod, grande){ return `<span class="as-c as-${cod}${grande?' as-g':''}">${cod}</span>`; }
+/* ---- Asistencia: Ausentes del día y Fechas pendientes ---- */
+function asisHoyLocal(){ const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function asisPeriodoDe(f){ for(let p=1;p<=4;p++){ const r = asisRango(p); if(r && f>=r.ini && f<=r.fin) return p; } return null; }
+function asisObs(grado, f, estId, texto){
+  commit(doc=>{
+    const a = doc.asistencia = doc.asistencia || {}; a.obs = a.obs || {};
+    const k = grado+'|'+f+'|'+estId, t = String(texto||'').trim();
+    if(t) a.obs[k] = t; else delete a.obs[k];
+  });
+}
+function asisFechaAusentes(){ return viewState.asisFechaAus || asisHoyLocal(); }
+function asisFechaLarga(iso){
+  const dias = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+  const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const d = new Date(iso+'T00:00:00Z'); return dias[d.getUTCDay()]+' '+d.getUTCDate()+' de '+meses[d.getUTCMonth()]+' de '+d.getUTCFullYear();
+}
+function asisAusentesDelDia(f, gradoSel){
+  const out = [];
+  (DB.config.grados || []).filter(g=>!gradoSel || g===gradoSel).forEach(g=>{
+    asisEstudiantes(g, asisPeriodoDe(f) || 1).forEach((e,i)=>{ if(asisMarca(g, f, e.id)==='A') out.push({g, e, n:i+1}); });
+  });
+  return out;
+}
+function asisAusentesHtml(){
+  const f = asisFechaAusentes(), gs = DB.config.grados || [], gsel = viewState.asisGradoAus || '';
+  const filtros = `<div class="filters">
+    <div class="field"><label>Fecha</label><input type="date" value="${esc(f)}" onchange="viewState.asisFechaAus=this.value||''; render();"></div>
+    <div class="field"><label>Aula</label><select onchange="viewState.asisGradoAus=this.value; render();"><option value="">Todas las aulas</option>${gs.map(g=>`<option ${g===gsel?'selected':''}>${esc(g)}</option>`).join('')}</select></div>
+    <div class="field"><label>&nbsp;</label><button class="btn btn-primary" onclick="asisImprimirAusentes()">Descargar en PDF</button></div></div>`;
+  if(asisEsLibre(f)) return filtros + `<div class="card"><p class="empty">${esc(asisFechaLarga(f))} está marcado sin clases: ${esc(asisDatos().libre[f])}.</p></div>`;
+  const lista = asisAusentesDelDia(f, gsel);
+  if(!lista.length) return filtros + `<div class="card"><p class="empty">No hay estudiantes marcados Ausente el ${esc(asisFechaLarga(f))}.</p></div>`;
+  const filas = lista.map(({g,e,n})=>{
+    const cur = asisDatos().mot[g+'|'+f+'|'+e.id] || '';
+    const obs = asisDatos().obs[g+'|'+f+'|'+e.id] || '';
+    const pills = ASIS_MOTIVOS_A.map(x=>`<button class="as-p ${cur===x?'on as-A':''}" onclick="asisMotivo('${esc(g)}','${f}','${e.id}','${esc(x)}')">${x}</button>`).join('');
+    return `<tr><td style="font-weight:600;text-align:left">${esc(g)}</td><td>${n}</td><td style="text-align:left">${esc(nombresDe(e)+' '+apellidosDe(e))}</td>
+      <td style="text-align:left"><div class="as-mo" style="margin:0 0 6px">${pills}</div><input style="width:100%" placeholder="Observaciones…" value="${esc(obs)}" onchange="asisObs('${esc(g)}','${f}','${e.id}',this.value)"></td></tr>`;
+  }).join('');
+  return filtros + `<div class="card"><div class="table-wrap"><table class="as-tabla as-aus">
+    <thead><tr><th colspan="4" style="background:#EEF3FB;color:#12306E">LISTA DE ESTUDIANTES · Fecha: ${esc(asisFechaLarga(f))}</th></tr>
+    <tr><th style="width:90px;text-align:left">Grado</th><th style="width:44px">N°</th><th style="width:230px;text-align:left">Nombre</th><th style="text-align:left">Observaciones</th></tr></thead>
+    <tbody>${filas}</tbody></table></div>
+    <p class="nota-chica">Solo aparecen los estudiantes marcados Ausente ese día. Cambia la fecha con el calendario; al abrir siempre empieza en hoy.</p></div>`;
+}
+function asisImprimirAusentes(){
+  const f = asisFechaAusentes(), lista = asisAusentesDelDia(f, viewState.asisGradoAus || '');
+  if(!lista.length){ showToast('No hay ausentes en esa fecha.'); return; }
+  const q = s => String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const filas = lista.map(({g,e,n})=>{
+    const mot = asisDatos().mot[g+'|'+f+'|'+e.id] || '', obs = asisDatos().obs[g+'|'+f+'|'+e.id] || '';
+    return '<tr><td>'+q(g)+'</td><td style="text-align:center">'+n+'</td><td>'+q(nombresDe(e)+' '+apellidosDe(e))+'</td><td>'+q([mot,obs].filter(Boolean).join(' — '))+'</td></tr>';
+  }).join('');
+  const cierre = '<' + '/script>';
+  const html = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Ausentes del día</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h2{margin:0 0 4px;text-align:center}p{text-align:center;margin:0 0 14px}table{width:100%;border-collapse:collapse;font-size:13px}th,td{border:1px solid #444;padding:6px 8px}th{background:#eee}</style></head><body><h2>LISTA DE ESTUDIANTES</h2><p>Fecha: '+q(asisFechaLarga(f))+'</p><table><thead><tr><th>Grado</th><th>N°</th><th>Nombre</th><th>Observaciones</th></tr></thead><tbody>'+filas+'</tbody></table><script>window.onload=function(){setTimeout(function(){window.print();},300);};'+cierre+'</body></html>';
+  const v = window.open('', '_blank');
+  if(!v){ showToast('El navegador bloqueó la ventana emergente. Permítela e intenta de nuevo.'); return; }
+  v.document.write(html); v.document.close();
+  showToast('En el diálogo de impresión elige "Guardar como PDF".');
+}
+/* Días de clase (lunes a viernes, antes de hoy) sin lista tomada, por aula y mes */
+function asisPendientes(){
+  const hoy = asisHoyLocal(), out = {}; const meses = new Set();
+  (DB.config.grados || []).forEach(g=>{
+    out[g] = {};
+    for(let p=1;p<=4;p++){
+      asisSemanas(p).forEach(s=>s.forEach(f=>{
+        if(f>=hoy || asisEsLibre(f) || asisDiaTieneLista(g, f)) return;
+        const m = f.slice(0,7); meses.add(m);
+        (out[g][m] = out[g][m] || []).push(f);
+      }));
+    }
+  });
+  return {datos: out, meses: Array.from(meses).sort()};
+}
+function asisIrA(grado, f){
+  const p = asisPeriodoDe(f); if(!p) return;
+  const ss = asisSemanas(p), i = ss.findIndex(s=>s.indexOf(f)>=0);
+  PREFS['asisGrado'] = grado; PREFS['asisPer'] = p; if(i>=0) PREFS['asisSem_'+p] = i; PREFS['asisDia'] = f;
+  setPref('asisTab', 'lista');
+}
+function asisPendientesHtml(){
+  if(![1,2,3,4].some(p=>asisRango(p))) return `<div class="card"><p class="empty">Todavía no hay fechas de períodos. Ponlas en Seguimiento de docentes → Fecha de inicio y final de cada período.</p></div>`;
+  const {datos, meses} = asisPendientes();
+  const NM = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  if(!meses.length) return `<div class="card"><p class="empty">Todos los grados tienen asistencia al día. 🎉</p></div>`;
+  const filas = (DB.config.grados || []).map(g=>`<tr><td style="font-weight:600;text-align:left">${esc(g)}</td>${meses.map(m=>{
+    const dias = datos[g][m] || [];
+    return `<td style="color:#B5445A;font-weight:600">${dias.map(f=>`<a href="#" style="color:inherit" title="Pasar esta lista" onclick="asisIrA('${esc(g)}','${f}'); return false;">${Number(f.slice(8))}</a>`).join(', ')}</td>`;
+  }).join('')}</tr>`).join('');
+  return `<div class="card"><p class="card-title">Fechas detalladas en que falta pasar asistencia</p><div class="table-wrap"><table class="as-tabla">
+    <thead><tr><th style="text-align:left;width:150px">Aula</th>${meses.map(m=>`<th>${NM[Number(m.slice(5))].toUpperCase()}</th>`).join('')}</tr></thead><tbody>${filas}</tbody></table></div>
+    <p class="nota-chica">Cuenta los días de clase (lunes a viernes) anteriores a hoy en que ese grado no tiene lista. Los días sin clase no se cuentan. Toca una fecha para ir a pasar esa lista.</p></div>`;
+}
 function renderAsistencia(){
   if(!asisPuede()) return renderNoAccess();
   const grados = DB.config.grados || [];
@@ -4935,9 +5040,11 @@ function renderAsistencia(){
     <p class="page-desc">Se marca por día y se cuenta por semana y por período. Presente, tardía y justificada cuentan como asistencia; solo ausente es inasistencia.</p></div>`;
   if(!grados.length) return head + `<div class="card"><p class="empty">Todavía no hay grados creados.</p></div>`;
   const grado = asisGradoSel(), p = asisPeriodoSel();
-  const tab = ['lista','semana','resumen'].includes(getPref('asisTab','lista')) ? getPref('asisTab','lista') : 'lista';
+  const tab = ['lista','semana','resumen','ausentes','pendientes'].includes(getPref('asisTab','lista')) ? getPref('asisTab','lista') : 'lista';
   const tabs = `<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
-    ${[['lista','Pase de lista'],['semana','Semana'],['resumen','Resumen del período']].map(([k,t])=>`<button class="btn ${tab===k?'btn-primary':''}" onclick="setPref('asisTab','${k}')">${t}</button>`).join('')}</div>`;
+    ${[['lista','Pase de lista'],['semana','Semana'],['resumen','Resumen del período'],['ausentes','Ausentes del día'],['pendientes','Fechas pendientes']].map(([k,t])=>`<button class="btn ${tab===k?'btn-primary':''}" onclick="setPref('asisTab','${k}')">${t}</button>`).join('')}</div>`;
+  if(tab==='ausentes') return head + tabs + asisAusentesHtml();
+  if(tab==='pendientes') return head + tabs + asisPendientesHtml();
   const filtros = `<div class="filters">
     <div class="field"><label>Aula</label><select onchange="setPref('asisGrado',this.value)">${grados.map(g=>`<option ${g===grado?'selected':''}>${esc(g)}</option>`).join('')}</select></div>
     <div class="field"><label>Período</label><select onchange="setPref('asisPer',this.value)">${[1,2,3,4].map(n=>`<option value="${n}" ${n===p?'selected':''}>Período ${n}</option>`).join('')}</select></div></div>`;
