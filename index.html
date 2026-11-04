@@ -778,7 +778,7 @@ if('serviceWorker' in navigator){
    Cada entrega lleva un número de versión. Al abrir la plataforma (y cada cierto rato, o al volver a la
    pestaña) se compara con la versión publicada; si es distinta, aparece un aviso discreto abajo.
    Si es la misma, no pasa nada. Súbele el número cada vez que se publique una actualización. */
-const APP_VERSION = '2026-11-04-1445';
+const APP_VERSION = '2026-11-04-1500';
 let _avisoVersionMostrado = false, _ultimaRevisionVersion = 0;
 async function revisarVersionNueva(){
   if(_avisoVersionMostrado) return;
@@ -5075,7 +5075,7 @@ function asisNumVersion(g, v){ return asisVersiones(g).findIndex(x=>x.id===v.id)
 function asisTipoCelda(t){ t = String(t||'').trim(); if(!t) return ''; if(/^receso/i.test(t)) return 'receso'; if(/^almuerzo/i.test(t)) return 'almuerzo'; return 'clase'; }
 function asisBloquesDe(v, dow){
   const out = [];
-  ((v && v.filas) || []).forEach(r=>{ const t = String((r.c||{})[dow]||'').trim(); if(!t) return; out.push({ini:r.ini, fin:r.fin, materia:t, tipo:asisTipoCelda(t)}); });
+  ((v && v.filas) || []).forEach(r=>{ const t = String((r.c||{})[dow]||'').trim(); if(!t) return; out.push({ini:r.ini, fin:r.fin, materia:t, maestra:String((r.t||{})[dow]||'').trim(), tipo:asisTipoCelda(t)}); });
   return out;
 }
 function asisHorarioDia(grado, fecha){ const v = asisVersionPara(grado, fecha); return v ? asisBloquesDe(v, asisDiaSemana(fecha)) : null; }
@@ -5112,6 +5112,7 @@ function asisHorHora(g, vid, i, txt){
   const r = asisParseRango(txt); if(!r){ showToast('Escribe la hora así: 7:40-8:20'); render(); return; }
   asisHorMut(g, vid, v=>{ if(v.filas[i]){ v.filas[i].ini = r.ini; v.filas[i].fin = r.fin; } }); render();
 }
+function asisHorMaestra(g, vid, i, d, txt){ asisHorMut(g, vid, v=>{ if(v.filas[i]){ v.filas[i].t = v.filas[i].t || {}; v.filas[i].t[d] = String(txt||'').trim(); } }); render(); }
 function asisHorCelda(g, vid, i, d, txt){ asisHorMut(g, vid, v=>{ if(v.filas[i]){ v.filas[i].c = v.filas[i].c || {}; v.filas[i].c[d] = String(txt||'').trim().toUpperCase(); } }); render(); }
 function asisHorFila(g, vid, accion, i){
   asisHorMut(g, vid, v=>{
@@ -5133,13 +5134,35 @@ function asisHorCopiar(g, vid){
 }
 function asisHorPegarAbrir(){ viewState.horPegar = true; render(); }
 function asisHorPegarCerrar(){ viewState.horPegar = false; render(); }
+function asisTsv(txt){
+  const filas = []; let fila = [], cel = '', q = false;
+  for(let i=0;i<txt.length;i++){
+    const c = txt[i];
+    if(q){ if(c==='"'){ if(txt[i+1]==='"'){ cel+='"'; i++; } else q = false; } else cel += c; }
+    else if(c==='"' && cel===''){ q = true; }
+    else if(c==='\t'){ fila.push(cel); cel = ''; }
+    else if(c==='\n' || c==='\r'){ if(c==='\r' && txt[i+1]==='\n') i++; fila.push(cel); filas.push(fila); fila = []; cel = ''; }
+    else cel += c;
+  }
+  if(cel!=='' || fila.length){ fila.push(cel); filas.push(fila); }
+  return filas;
+}
+function asisCeldaMaestra(raw){
+  const t = String(raw||'').replace(/\r/g,'').trim(); if(!t) return {m:'', t:''};
+  const par = /^([\s\S]*?)\(([^)]*)\)\s*$/.exec(t);
+  if(par) return {m:par[1].replace(/\s+/g,' ').trim().toUpperCase(), t:par[2].replace(/\s+/g,' ').trim()};
+  const lineas = t.split(/\n+/).map(x=>x.trim()).filter(Boolean);
+  if(lineas.length>1) return {m:lineas[0].toUpperCase(), t:lineas.slice(1).join(' ')};
+  return {m:t.replace(/\s+/g,' ').toUpperCase(), t:''};
+}
 function asisHorPegarAplicar(g, vid){
   const el = document.getElementById('hor_pegar_txt'); const txt = el ? el.value : '';
   const filas = [];
-  txt.split(/\r?\n/).forEach(l=>{
-    const cols = l.split('\t'); const r = asisParseRango(cols[0]); if(!r) return;
-    const c = {}; for(let d=1; d<=5; d++) c[d] = String(cols[d]||'').replace(/\(.*?\)/g,'').replace(/\s+/g,' ').trim().toUpperCase();
-    filas.push({ini:r.ini, fin:r.fin, c});
+  asisTsv(txt).forEach(cols=>{
+    const r = asisParseRango(cols[0]); if(!r) return;
+    const c = {}, t = {};
+    for(let d=1; d<=5; d++){ const x = asisCeldaMaestra(cols[d]); c[d] = x.m; if(x.t && asisTipoCelda(x.m)==='clase') t[d] = x.t; }
+    filas.push({ini:r.ini, fin:r.fin, c, t});
   });
   if(!filas.length){ showToast('No encontré filas con hora (ej.: 7:40-8:20) separadas por tabulación.'); return; }
   asisHorMut(g, vid, v=>{ v.filas = filas; });
@@ -5158,9 +5181,10 @@ function renderHorarios(){
   const chips = vs.map((v,i)=>chip('Horario '+(i+1)+' · desde '+asisFechaCorta(v.desde)+(hoyV&&hoyV.id===v.id?' · vigente hoy':''), ver&&ver.id===v.id, `viewState.horVer='${v.id}'; render();`)).join('') + chip('+ Nuevo horario', false, `asisHorNuevo('${esc(g)}')`);
   if(!ver) return head + filtro + `<div class="card"><p class="empty">Este grado todavía no tiene horario.</p><div class="btn-row"><button class="btn btn-primary" onclick="asisHorNuevo('${esc(g)}')">Crear el primer horario</button></div></div>`;
   const nombres = Array.from(new Set((DB.asignaturas||[]).map(a=>String(a.nombre||'').toUpperCase()).filter(Boolean).concat(['RECESO','ALMUERZO'])));
-  const dl = `<datalist id="hor_dl">${nombres.map(n=>`<option value="${esc(n)}">`).join('')}</datalist>`;
+  const maestras = Array.from(new Set((DB.docentes||[]).filter(d=>d.tipo==='docente').map(d=>d.nombre).filter(Boolean)));
+  const dl = `<datalist id="hor_dl">${nombres.map(n=>`<option value="${esc(n)}">`).join('')}</datalist><datalist id="hor_dt">${maestras.map(n=>`<option value="${esc(n)}">`).join('')}</datalist>`;
   const estilo = t => t==='receso'||t==='almuerzo' ? 'background:#EFE9DC;color:#8A8372;font-style:italic' : (t==='clase' ? 'background:#F1F5FC;font-weight:600;color:#14264F' : 'background:#fff');
-  const filas = ver.filas.map((r,i)=>`<tr><td style="border:1px solid #D7DFEE;padding:4px;width:104px"><input style="width:100%;text-align:center;font-weight:700;border:none;background:transparent" value="${esc(asisRangoTxt(r))}" onchange="asisHorHora('${esc(g)}','${ver.id}',${i},this.value)"></td>${[1,2,3,4,5].map(d=>{ const t = (r.c||{})[d]||''; return `<td style="border:1px solid #D7DFEE;padding:3px;${estilo(asisTipoCelda(t))}"><input list="hor_dl" style="width:100%;text-align:center;border:none;background:transparent;font-size:12.5px;${asisTipoCelda(t)==='clase'?'font-weight:600':''}" value="${esc(t)}" onchange="asisHorCelda('${esc(g)}','${ver.id}',${i},${d},this.value)"></td>`; }).join('')}<td style="border:none;width:26px"><button class="icon-btn" title="Quitar fila" onclick="asisHorFila('${esc(g)}','${ver.id}','menos',${i})">×</button></td></tr>`).join('');
+  const filas = ver.filas.map((r,i)=>`<tr><td style="border:1px solid #D7DFEE;padding:4px;width:104px"><input style="width:100%;text-align:center;font-weight:700;border:none;background:transparent" value="${esc(asisRangoTxt(r))}" onchange="asisHorHora('${esc(g)}','${ver.id}',${i},this.value)"></td>${[1,2,3,4,5].map(d=>{ const t = (r.c||{})[d]||'', mt = (r.t||{})[d]||'', tp = asisTipoCelda(t); return `<td style="border:1px solid #D7DFEE;padding:3px;${estilo(tp)}"><input list="hor_dl" style="width:100%;text-align:center;border:none;background:transparent;font-size:12.5px;${tp==='clase'?'font-weight:600':''}" value="${esc(t)}" onchange="asisHorCelda('${esc(g)}','${ver.id}',${i},${d},this.value)">${tp==='clase'?`<input list="hor_dt" placeholder="Maestra" style="width:100%;text-align:center;border:none;background:transparent;font-size:11.5px;color:#4B5A7C" value="${esc(mt)}" onchange="asisHorMaestra('${esc(g)}','${ver.id}',${i},${d},this.value)">`:''}</td>`; }).join('')}<td style="border:none;width:26px"><button class="icon-btn" title="Quitar fila" onclick="asisHorFila('${esc(g)}','${ver.id}','menos',${i})">×</button></td></tr>`).join('');
   const otros = gs.filter(x=>x!==g);
   const pegar = viewState.horPegar ? `<div class="modal-overlay" style="position:fixed;inset:0;background:rgba(10,20,45,.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:16px"><div class="card" style="max-width:640px;width:100%;margin:0"><p class="card-title">Pegar horario desde Excel</p><p class="nota-chica">Copia la tabla en Excel (las horas y los cinco días, de lunes a viernes) y pégala aquí. Reemplaza las filas de este horario.</p><textarea id="hor_pegar_txt" rows="10" style="width:100%" placeholder="7:40-8:20&#9;CHAPEL&#9;MATH&#9;MATH&#9;LENGUAJE&#9;LENGUAJE"></textarea><div class="btn-row"><button class="btn btn-primary" onclick="asisHorPegarAplicar('${esc(g)}','${ver.id}')">Aplicar</button><button class="btn" onclick="asisHorPegarCerrar()">Cancelar</button></div></div></div>` : '';
   return head + filtro + `<div class="card">
@@ -5173,7 +5197,7 @@ function renderHorarios(){
     <div class="table-wrap"><table style="width:100%;border-collapse:collapse;font-size:13px">
       <thead><tr style="background:#1F3A52;color:#fff"><th style="padding:8px">HORA</th>${ASIS_DIAS5.map(d=>`<th>${d}</th>`).join('')}<th></th></tr></thead><tbody>${filas}</tbody></table></div>
     ${dl}
-    <p class="nota-chica">Escribe RECESO o ALMUERZO en las celdas que no son clase. Deja vacío donde no hay clase. La hora se escribe así: 7:40-8:20.</p>
+    <p class="nota-chica">En cada clase pon la materia y el nombre de la maestra. Escribe RECESO o ALMUERZO en las celdas que no son clase. Deja vacío donde no hay clase. La hora se escribe así: 7:40-8:20.</p>
     <div class="btn-row"><button class="btn" onclick="asisHorFila('${esc(g)}','${ver.id}','mas')">+ Agregar fila de hora</button><button class="btn" onclick="asisHorPegarAbrir()">Pegar desde Excel</button>
       ${otros.length?`<span style="display:inline-flex;gap:6px;align-items:center"><select id="hor_copiar_a">${otros.map(x=>`<option>${esc(x)}</option>`).join('')}</select><button class="btn" onclick="asisHorCopiar('${esc(g)}','${ver.id}')">Copiar a otro grado</button></span>`:''}
       <button class="btn btn-danger" onclick="asisHorEliminar('${esc(g)}','${ver.id}')">Eliminar este horario</button></div>
@@ -5189,11 +5213,12 @@ function asisPierde(grado, fecha, hora){
   dia.forEach(b=>{
     if(b.tipo && b.tipo!=='clase') return;
     const a = asisMin(b.ini), z = asisMin(b.fin); if(a===null || z===null || z<=t) return;
-    const k = b.materia || 'Clase'; if(!acc[k]){ acc[k] = {materia:k, horas:0, min:0}; orden.push(k); }
+    const k = (b.materia || 'Clase')+'|'+(b.maestra||''); if(!acc[k]){ acc[k] = {materia:b.materia || 'Clase', maestra:b.maestra||'', horas:0, min:0}; orden.push(k); }
     if(a>=t) acc[k].horas++; else acc[k].min += (z-t);
   });
   return orden.map(k=>acc[k]);
 }
+function asisEtiqueta(x){ return (x.materia||'')+(x.maestra?' ('+x.maestra+')':''); }
 function asisTextoPierde(x){
   const p = [];
   if(x.horas) p.push(x.horas+(x.horas===1?' hora clase':' horas clase'));
@@ -5237,7 +5262,7 @@ function asisComprobarHtml(){
     let marca = '', bg = '#fff';
     if(tipo==='clase' && t!==null && z>t){ if(a>=t){ marca = 'Pierde: 1 hora clase'; bg = '#FBE9ED'; } else { marca = 'Pierde '+(z-t)+' min (sale '+asisHora12(r.hora)+')'; bg = '#FDF3E3'; } }
     if(tipo!=='clase') bg = '#EFE9DC';
-    return `<tr style="background:${bg}"><td style="border:1px solid #D7DFEE;padding:6px 10px;width:110px;font-weight:700">${esc(asisRangoTxt(f))}</td><td style="border:1px solid #D7DFEE;padding:6px 10px;${tipo!=='clase'?'font-style:italic;color:#8A8372':''}">${esc(txt)}</td><td style="border:1px solid #D7DFEE;padding:6px 10px;width:210px;font-size:12.5px;font-weight:600;color:${marca.indexOf('1 hora')>=0?'#B5445A':'#8A5A00'}">${esc(marca)}</td></tr>`;
+    return `<tr style="background:${bg}"><td style="border:1px solid #D7DFEE;padding:6px 10px;width:110px;font-weight:700">${esc(asisRangoTxt(f))}</td><td style="border:1px solid #D7DFEE;padding:6px 10px;${tipo!=='clase'?'font-style:italic;color:#8A8372':''}">${esc(txt)}${(f.t||{})[dow]?`<div style="font-size:12px;color:#6B7A99;font-style:normal">${esc(f.t[dow])}</div>`:''}</td><td style="border:1px solid #D7DFEE;padding:6px 10px;width:210px;font-size:12.5px;font-weight:600;color:${marca.indexOf('1 hora')>=0?'#B5445A':'#8A5A00'}">${esc(marca)}</td></tr>`;
   }).join('');
   return shell(tit+`<div style="color:#41507A;font-size:13.5px;margin:2px 0 12px">${esc(r.grado)}${e?' · '+esc(nombresDe(e)+' '+apellidosDe(e)):''} · ${esc(asisFechaLarga(r.fecha))} · <b>Horario ${asisNumVersion(r.grado, ver)}</b> (vigente desde el ${esc(asisFechaCorta(ver.desde))}) · sale a las ${esc(asisHora12(r.hora))}</div><table style="width:100%;border-collapse:collapse;font-size:13.5px">${filas || '<tr><td>Ese día no tenía clases en el horario.</td></tr>'}</table><p class="nota-chica" style="margin-top:10px">Si el horario cambia después, este retiro conserva lo que se guardó ese día.</p>`);
 }
@@ -5262,7 +5287,7 @@ function asisRetirosHtml(){
   const filas = lista.map(r=>{
     const e = DB.estudiantes.find(x=>x.id===r.estId);
     const pr = Array.isArray(r.pierde) ? r.pierde : (r.pierde===null ? null : asisPierde(r.grado, r.fecha, r.hora));
-    const txt = pr ? (pr.length ? pr.map(x=>esc(x.materia)+' '+asisTextoPierde(x)).join(' · ') : 'Nada') : '—';
+    const txt = pr ? (pr.length ? pr.map(x=>esc(asisEtiqueta(x))+' '+asisTextoPierde(x)).join(' · ') : 'Nada') : '—';
     return `<tr><td style="text-align:left">${esc(r.grado)}</td><td style="text-align:left">${e?esc(nombresDe(e)+' '+apellidosDe(e)):'(estudiante eliminado)'} <button class="btn btn-sm" style="margin-left:6px" onclick="viewState.retCheck='${r.id}'; render();">Comprobar horario</button></td><td>${esc(asisHora12(r.hora))}</td><td style="text-align:left">${txt}</td><td style="text-align:left">${esc(r.obs||'')}</td><td><button class="icon-btn" title="Quitar" onclick="asisRetiroQuitar('${r.id}')">×</button></td></tr>`;
   }).join('');
   const tabla = `<div class="card"><div class="card-title">Retiros del ${esc(asisFechaLarga(f))}</div>${lista.length ? `<div class="table-wrap"><table class="as-tabla as-ret"><thead><tr><th style="text-align:left">Aula</th><th style="text-align:left">Estudiante</th><th>Hora</th><th style="text-align:left">Pierde</th><th style="text-align:left">Observaciones</th><th></th></tr></thead><tbody>${filas}</tbody></table></div>` : '<p class="empty">No hay retiros ese día.</p>'}</div>`;
@@ -5274,7 +5299,7 @@ function asisPierdeCaja(g, f, hora){
   const pr = asisPierde(g, f, hora);
   if(pr===null) return `<div style="${base}"><div style="font-weight:700;color:#12306E;margin-bottom:4px">Lo que pierde</div><p class="nota-chica" style="margin:0">Todavía no hay horario de este grado para ese día. Cuando exista el panel “Horarios por grados”, aquí saldrá solo lo que pierde. Por ahora se guarda el retiro con su fecha y hora.</p></div>`;
   if(!pr.length) return `<div style="${base}"><div style="font-weight:700;color:#12306E">No pierde ninguna clase a esa hora.</div></div>`;
-  return `<div style="${base}"><div style="font-weight:700;color:#12306E;margin-bottom:6px">Lo que pierde (según el horario del grado)</div>${pr.map(x=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px dashed #E1E8F5;font-size:15px"><span>${esc(x.materia)}</span><b style="color:#B5445A">${asisTextoPierde(x)}</b></div>`).join('')}</div>`;
+  return `<div style="${base}"><div style="font-weight:700;color:#12306E;margin-bottom:6px">Lo que pierde (según el horario del grado)</div>${pr.map(x=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px dashed #E1E8F5;font-size:15px"><span>${esc(x.materia)}${x.maestra?` <span style="color:#6B7A99;font-size:13px">· ${esc(x.maestra)}</span>`:''}</span><b style="color:#B5445A">${asisTextoPierde(x)}</b></div>`).join('')}</div>`;
 }
 function renderAsistencia(){
   if(!asisPuede()) return renderNoAccess();
