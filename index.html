@@ -767,7 +767,7 @@ if('serviceWorker' in navigator){
    Cada entrega lleva un número de versión. Al abrir la plataforma (y cada cierto rato, o al volver a la
    pestaña) se compara con la versión publicada; si es distinta, aparece un aviso discreto abajo.
    Si es la misma, no pasa nada. Súbele el número cada vez que se publique una actualización. */
-const APP_VERSION = '2026-11-03-1450';
+const APP_VERSION = '2026-11-04-1045';
 let _avisoVersionMostrado = false, _ultimaRevisionVersion = 0;
 async function revisarVersionNueva(){
   if(_avisoVersionMostrado) return;
@@ -3113,11 +3113,14 @@ function hojaPorDefecto(grado, asigId){
   filas.push(nuevaInteg(1));
   return {filas: filas, examen: {fecha:'', texto: cfg.textoExamenes}};
 }
+function textoExamenLimpio(t){ return String(t||'').replace(/[\s,;:.\-–—]*MATERIAS\s+COMPLEMENTARIAS\s*$/i,'').trim(); }
 function getHoja(grado, asigId, periodo){
   if(!DB.hojas) DB.hojas = {};
   const k = hojaKey(grado, asigId, periodo);
   if(!DB.hojas[k]) DB.hojas[k] = hojaPorDefecto(grado, asigId);
-  return DB.hojas[k];
+  const h = DB.hojas[k];
+  if(h.examen && h.examen.texto && /MATERIAS\s+COMPLEMENTARIAS/i.test(h.examen.texto)) h.examen.texto = textoExamenLimpio(h.examen.texto) || 'SEMANA DE EXÁMENES';
+  return h;
 }
 function mutarHoja(grado, asigId, periodo, fn){
   const k = hojaKey(grado, asigId, periodo);
@@ -9894,7 +9897,7 @@ function insertarFilasMultiples(){
     if(examenFecha || examenTexto){
       h.examen = h.examen || {};
       if(examenFecha) h.examen.fecha = examenFecha;
-      if(examenTexto) h.examen.texto = examenTexto;
+      if(examenTexto) h.examen.texto = textoExamenLimpio(examenTexto) || examenTexto;
     }
   });
 
@@ -12082,6 +12085,8 @@ function ejecutarCierre(){
     });
     doc.ajustes = doc.ajustes || {};
     doc.ajustes.anio = anioNuevo;
+    doc.ajustes.desdeP1 = true;
+    (doc.asignaturas||[]).forEach(a=>{ if(a.complementoDe) a.desdePeriodo = 1; });   /* año nuevo: materias complementarias (ej. Reading) cuentan desde P1 */
   });
   viewState.cierre = null;
   render();
@@ -13491,7 +13496,7 @@ function recuperacionesBoleta(estId, grado, vis){
   const filas = [];
   const asigs = asignaturasBoleta(grado);
   const num = v => (v!==undefined && v!==null && v!=='' && !isNaN(v)) ? Number(v) : null;
-  (vis||[1,2,3,4]).filter(p=>p>=2).forEach(p=>{
+  (vis||[1,2,3,4]).filter(p=>p>=(desdeP1Anio()?1:2)).forEach(p=>{
     asigs.forEach(a=>{
       rubrosActivos().filter(r=>r.conRecuperacion).forEach(r=>{
         const rec = num(getComp(estId, a.id, p, claveRecuperacion(r.key)));
@@ -13510,9 +13515,11 @@ function recuperacionesBoletaHtml(filas, esc2){
 }
 /* ---- Sugerencia de observaciones para la boleta (notas, conducta, asistencia y reportes) ----
    Tercer grado la tiene desde el período I; los demás grados, desde el período II. */
+/* Desde que se cierra el año escolar, lo que empezaba en P2 (sugerencias de observaciones, recuperaciones) aparece desde P1 */
+function desdeP1Anio(){ return !!(DB.ajustes && DB.ajustes.desdeP1); }
 function bolSugerenciaDisponible(grado, p){
   const tercero = gradoClave(grado) === 3;
-  return p >= (tercero ? 1 : 2);
+  return p >= ((tercero || desdeP1Anio()) ? 1 : 2);
 }
 function bolHash(t){ let h = 0; for(let i=0;i<t.length;i++){ h = (h*31 + t.charCodeAt(i)) >>> 0; } return h; }
 function bolSugerirObs(est, grado, p){
@@ -14371,9 +14378,19 @@ function renderHojas(){
         ${posibles.map(x=>`<option value="${x.id}" ${asigId===x.id?'selected':''}>${esc(x.nombre)}</option>`).join('')}
       </select>
     </div>
-    <button class="btn btn-primary" onclick="imprimirHoja('${esc(grado)}','${asigId}',${periodo},'aula')">Descargar en PDF</button>
-    <button class="btn" onclick="imprimirHoja('${esc(grado)}','${asigId}',${periodo},'todas')">Todas mis aulas en PDF</button>
   </div>
+    ${edit?`<div class="btn-row" style="align-items:center; margin:0 0 12px;">
+      <button class="btn btn-sm" onclick="agregarFilaHoja('tarea')">+ Fila de tarea</button>
+      <button class="btn btn-sm" onclick="agregarFilaHoja('integradora')">+ Fila de integradora</button>
+      <button class="btn btn-sm" onclick="abrirCargarArchivoHoja()">Cargar desde archivo</button>
+      <button class="btn btn-sm" onclick="abrirDuplicarHoja()" title="Copiar todo el contenido de esta hoja a otra aula, asignatura o período">Duplicar esta hoja a…</button>
+      <button class="btn btn-sm btn-danger" onclick="eliminarTodasFilasHoja()" title="Borra todas las filas de tarea y de integradora. La fila de la semana de exámenes se queda.">Eliminar todas las filas</button>
+      <span class="nota-chica" style="margin:0 0 0 6px;">
+        ${typeof viewState.filaSel === 'number'
+          ? 'Se insertará debajo de la fila ' + (viewState.filaSel+1) + '. <a href="#" onclick="viewState.filaSel=null; render(); return false;">Quitar selección</a>'
+          : 'Marca una fila con el botón ◉ para insertar debajo de ella; si no, se agrega al final.'}
+      </span>
+    </div>`:''}
 
   <div class="period-tabs">
     ${[1,2,3,4].map(p=>`<div class="period-tab ${periodo==p?'active':''}" onclick="setPref('hojaPeriodo', ${p})">Período ${p}</div>`).join('')}
@@ -14408,17 +14425,10 @@ function renderHojas(){
       </tbody>
     </table>
     </div>
-    ${edit?`<div class="btn-row" style="align-items:center;">
-      <button class="btn btn-sm" onclick="agregarFilaHoja('tarea')">+ Fila de tarea</button>
-      <button class="btn btn-sm" onclick="agregarFilaHoja('integradora')">+ Fila de integradora</button>
-      <button class="btn btn-sm" onclick="abrirCargarArchivoHoja()">Cargar desde archivo</button>
-      <button class="btn btn-sm" onclick="abrirDuplicarHoja()" title="Copiar todo el contenido de esta hoja a otra aula, asignatura o período">Duplicar esta hoja a…</button>
-      <span class="nota-chica" style="margin:0 0 0 6px;">
-        ${typeof viewState.filaSel === 'number'
-          ? 'Se insertará debajo de la fila ' + (viewState.filaSel+1) + '. <a href="#" onclick="viewState.filaSel=null; render(); return false;">Quitar selección</a>'
-          : 'Marca una fila con el botón ◉ para insertar debajo de ella; si no, se agrega al final.'}
-      </span>
-    </div>`:''}
+    <div class="btn-row" style="margin-top:12px;">
+      <button class="btn btn-primary" onclick="imprimirHoja('${esc(grado)}','${asigId}',${periodo},'aula')">Descargar en PDF</button>
+      <button class="btn" onclick="imprimirHoja('${esc(grado)}','${asigId}',${periodo},'todas')">Todas mis aulas en PDF</button>
+    </div>
     <p class="nota-chica">Las firmas se configuran una vez y quedan por defecto: ${cfg.firmas.map(f=>esc(f)).join(' · ')}.
       ${edit?`<button class="btn btn-sm" style="margin-left:8px;" onclick="editarFirmasHoja()">Cambiar firmas</button>`:''}</p>
   </div>
@@ -14591,6 +14601,16 @@ function agregarFilaHoja(tipo){
   viewState.filaSel = (donde !== null) ? donde + 1 : null;
   render();
 }
+function eliminarTodasFilasHoja(){
+  const {grado, asigId, periodo} = hojaActual();
+  const n = getHoja(grado, asigId, periodo).filas.length;
+  if(!n){ showToast('Esta hoja no tiene filas.'); return; }
+  if(!confirm('¿Eliminar las '+n+' filas de tarea e integradora de esta hoja? La fila de la semana de exámenes se queda. Si tenían notas cargadas en Calificaciones, se recorrerán las casillas.')) return;
+  mutarHoja(grado, asigId, periodo, h=>{ h.filas = []; });
+  viewState.filaSel = null;
+  render();
+  showToast('Filas eliminadas.');
+}
 function quitarFilaHoja(i){
   if(!confirm('¿Quitar esta fila? Si tenía notas cargadas en Calificaciones, se recorrerán las casillas.')) return;
   const {grado, asigId, periodo} = hojaActual();
@@ -14715,7 +14735,7 @@ function imprimirHoja(grado, asigId, periodo, alcance){
         </tr>
         ${filas}
         <tr><td class="c neg">${q(h.examen.fecha||'')}</td>
-            <td colspan="7" class="c examen">${q(h.examen.texto||'')}</td></tr>
+            <td colspan="7" class="c examen">${q(textoExamenLimpio(h.examen.texto))}</td></tr>
       </table>
     </div></div>`;
   };
