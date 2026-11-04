@@ -778,7 +778,7 @@ if('serviceWorker' in navigator){
    Cada entrega lleva un número de versión. Al abrir la plataforma (y cada cierto rato, o al volver a la
    pestaña) se compara con la versión publicada; si es distinta, aparece un aviso discreto abajo.
    Si es la misma, no pasa nada. Súbele el número cada vez que se publique una actualización. */
-const APP_VERSION = '2026-11-04-1335';
+const APP_VERSION = '2026-11-04-1350';
 let _avisoVersionMostrado = false, _ultimaRevisionVersion = 0;
 async function revisarVersionNueva(){
   if(_avisoVersionMostrado) return;
@@ -4948,6 +4948,16 @@ function asisObs(grado, f, estId, texto){
     if(t) a.obs[k] = t; else delete a.obs[k];
   });
 }
+function asisCambiarTipo(grado, f, estId, cod){
+  if(asisMarca(grado, f, estId)===cod) return;
+  commit(doc=>{
+    const a = doc.asistencia = doc.asistencia || {}; a.reg = a.reg||{}; a.mot = a.mot||{};
+    const k = grado+'|'+f; a.reg[k] = a.reg[k] || {};
+    a.reg[k][estId] = cod;
+    if(cod==='A') delete a.mot[k+'|'+estId];
+  });
+  render();
+}
 function asisFechaAusentes(){ return viewState.asisFechaAus || asisHoyLocal(); }
 function asisFechaLarga(iso){
   const dias = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
@@ -4975,13 +4985,13 @@ function asisAusentesHtml(){
     const obs = asisDatos().obs[g+'|'+f+'|'+e.id] || '';
     const pills = m!=='J' ? '' : ASIS_MOTIVOS_J.map(x=>`<button class="as-p ${cur===x?'on as-J':''}" onclick="asisMotivo('${esc(g)}','${f}','${e.id}','${esc(x)}')">${x}</button>`).join('');
     return `<tr><td style="font-weight:600;text-align:left">${esc(g)}</td><td>${n}</td><td style="text-align:left">${esc(nombresDe(e)+' '+apellidosDe(e))}</td>
-      <td style="text-align:left"><div style="font-size:12px;font-weight:700;margin:0 0 4px;color:${m==='J'?'#2A7A5A':'#B5445A'}">${m==='J'?'Ausente justificado':'Ausente sin justificación'}</div>${pills?`<div class="as-mo" style="margin:0 0 6px">${pills}</div>`:''}<input style="width:100%" placeholder="Observaciones…" value="${esc(obs)}" onchange="asisObs('${esc(g)}','${f}','${e.id}',this.value)"></td></tr>`;
+      <td style="text-align:left"><div class="as-bs" style="margin:0 0 6px;display:flex;gap:6px;flex-wrap:wrap">${['A','J'].map(c=>`<button class="as-b ${m===c?'as-'+c+' on':''}" onclick="asisCambiarTipo('${esc(g)}','${f}','${e.id}','${c}')">${ASIS_COD[c]}</button>`).join('')}</div>${pills?`<div class="as-mo" style="margin:0 0 6px">${pills}</div>`:''}<input style="width:100%" placeholder="Observaciones…" value="${esc(obs)}" onchange="asisObs('${esc(g)}','${f}','${e.id}',this.value)"></td></tr>`;
   }).join('');
   return filtros + `<div class="card"><div class="table-wrap"><table class="as-tabla as-aus">
     <thead><tr><th colspan="4" style="background:#EEF3FB;color:#12306E">LISTA DE ESTUDIANTES · Fecha: ${esc(asisFechaLarga(f))}</th></tr>
     <tr><th style="width:90px;text-align:left">Grado</th><th style="width:44px">N°</th><th style="width:230px;text-align:left">Nombre</th><th style="text-align:left">Observaciones</th></tr></thead>
     <tbody>${filas}</tbody></table></div>
-    <p class="nota-chica">Solo aparecen los estudiantes marcados ausentes (sin justificación o justificados) ese día. Cambia la fecha con el calendario; al abrir siempre empieza en hoy.</p></div>`;
+    <p class="nota-chica">Solo aparecen los estudiantes marcados ausentes ese día. Puedes cambiar entre sin justificación y justificado desde aquí; también cambia en el pase de lista. Cambia la fecha con el calendario; al abrir siempre empieza en hoy.</p></div>`;
 }
 function asisImprimirAusentes(){
   const f = asisFechaAusentes(), lista = asisAusentesDelDia(f, viewState.asisGradoAus || '');
