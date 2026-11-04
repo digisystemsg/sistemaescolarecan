@@ -575,7 +575,7 @@
 .as-r{background:#fff;border:1px solid var(--line-strong);border-radius:12px;padding:8px 10px;margin-top:8px}
 .as-top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:14px}
 .as-bs{display:flex;gap:5px;flex-wrap:wrap}
-.as-b{min-width:72px;height:32px;border-radius:9px;border:1px solid #C9D2E6;background:#fff;color:#5A6478;font-size:12px;cursor:pointer}
+.as-b{min-width:72px;min-height:32px;padding:4px 10px;line-height:1.15;border-radius:9px;border:1px solid #C9D2E6;background:#fff;color:#5A6478;font-size:12px;cursor:pointer}
 .as-b.on.as-P,.as-c.as-P{background:#E5F3E9;color:#1F6B3A;border-color:#9CCBA8}
 .as-b.on.as-T,.as-c.as-T{background:#FFF1D2;color:#9A6A00;border-color:#E7C66F}
 .as-b.on.as-A,.as-c.as-A{background:#FBE5DC;color:#B5552B;border-color:#E5A98E}
@@ -778,7 +778,7 @@ if('serviceWorker' in navigator){
    Cada entrega lleva un número de versión. Al abrir la plataforma (y cada cierto rato, o al volver a la
    pestaña) se compara con la versión publicada; si es distinta, aparece un aviso discreto abajo.
    Si es la misma, no pasa nada. Súbele el número cada vez que se publique una actualización. */
-const APP_VERSION = '2026-11-04-1310';
+const APP_VERSION = '2026-11-04-1335';
 let _avisoVersionMostrado = false, _ultimaRevisionVersion = 0;
 async function revisarVersionNueva(){
   if(_avisoVersionMostrado) return;
@@ -4790,10 +4790,10 @@ function doLogout(){
 
 /* ============================= ASISTENCIA (solo Mantenimiento de plataforma) =============================
    DB.asistencia = { reg:{'grado|AAAA-MM-DD':{estId:'P'|'T'|'A'|'J'}}, mot:{'grado|fecha|estId':'texto'}, libre:{'AAAA-MM-DD':'motivo'} }
-   Presente, Tardía y Justificada cuentan como asistencia. Solo Ausente (A) es inasistencia. */
+   Presente, Tardía y Justificada cuentan como asistencia. Solo Ausente sin justificación (A) es inasistencia. */
 const ASIS_MOTIVOS_A = ['Enfermedad','Asunto familiar','Viaje','Transporte','Sin aviso','Otro'];
 const ASIS_MOTIVOS_J = ['Cita médica','Enfermedad','Asunto familiar','Permiso de la escuela','Otro'];
-const ASIS_COD = {P:'Presente', T:'Tardía', A:'Ausente', J:'Justif.'};
+const ASIS_COD = {P:'Presente', T:'Tardía', A:'Ausente sin justificación', J:'Ausente justificado'};
 function asisDatos(){ if(!DB.asistencia) DB.asistencia = {}; const a = DB.asistencia; a.reg = a.reg||{}; a.mot = a.mot||{}; a.libre = a.libre||{}; a.obs = a.obs||{}; return a; }
 function asisPuede(){ return !!currentUser && puedeCambiarVista(currentUser); }
 function asisSumaDias(iso, n){ const d = new Date(iso+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); }
@@ -4957,7 +4957,7 @@ function asisFechaLarga(iso){
 function asisAusentesDelDia(f, gradoSel){
   const out = [];
   (DB.config.grados || []).filter(g=>!gradoSel || g===gradoSel).forEach(g=>{
-    asisEstudiantes(g, asisPeriodoDe(f) || 1).forEach((e,i)=>{ if(asisMarca(g, f, e.id)==='A') out.push({g, e, n:i+1}); });
+    asisEstudiantes(g, asisPeriodoDe(f) || 1).forEach((e,i)=>{ const m = asisMarca(g, f, e.id); if(m==='A' || m==='J') out.push({g, e, n:i+1, m}); });
   });
   return out;
 }
@@ -4969,27 +4969,27 @@ function asisAusentesHtml(){
     <div class="field"><label>&nbsp;</label><button class="btn btn-primary" onclick="asisImprimirAusentes()">Descargar en PDF</button></div></div>`;
   if(asisEsLibre(f)) return filtros + `<div class="card"><p class="empty">${esc(asisFechaLarga(f))} está marcado sin clases: ${esc(asisDatos().libre[f])}.</p></div>`;
   const lista = asisAusentesDelDia(f, gsel);
-  if(!lista.length) return filtros + `<div class="card"><p class="empty">No hay estudiantes marcados Ausente el ${esc(asisFechaLarga(f))}.</p></div>`;
-  const filas = lista.map(({g,e,n})=>{
+  if(!lista.length) return filtros + `<div class="card"><p class="empty">No hay estudiantes ausentes el ${esc(asisFechaLarga(f))}.</p></div>`;
+  const filas = lista.map(({g,e,n,m})=>{
     const cur = asisDatos().mot[g+'|'+f+'|'+e.id] || '';
     const obs = asisDatos().obs[g+'|'+f+'|'+e.id] || '';
-    const pills = ASIS_MOTIVOS_A.map(x=>`<button class="as-p ${cur===x?'on as-A':''}" onclick="asisMotivo('${esc(g)}','${f}','${e.id}','${esc(x)}')">${x}</button>`).join('');
+    const pills = m!=='J' ? '' : ASIS_MOTIVOS_J.map(x=>`<button class="as-p ${cur===x?'on as-J':''}" onclick="asisMotivo('${esc(g)}','${f}','${e.id}','${esc(x)}')">${x}</button>`).join('');
     return `<tr><td style="font-weight:600;text-align:left">${esc(g)}</td><td>${n}</td><td style="text-align:left">${esc(nombresDe(e)+' '+apellidosDe(e))}</td>
-      <td style="text-align:left"><div class="as-mo" style="margin:0 0 6px">${pills}</div><input style="width:100%" placeholder="Observaciones…" value="${esc(obs)}" onchange="asisObs('${esc(g)}','${f}','${e.id}',this.value)"></td></tr>`;
+      <td style="text-align:left"><div style="font-size:12px;font-weight:700;margin:0 0 4px;color:${m==='J'?'#2A7A5A':'#B5445A'}">${m==='J'?'Ausente justificado':'Ausente sin justificación'}</div>${pills?`<div class="as-mo" style="margin:0 0 6px">${pills}</div>`:''}<input style="width:100%" placeholder="Observaciones…" value="${esc(obs)}" onchange="asisObs('${esc(g)}','${f}','${e.id}',this.value)"></td></tr>`;
   }).join('');
   return filtros + `<div class="card"><div class="table-wrap"><table class="as-tabla as-aus">
     <thead><tr><th colspan="4" style="background:#EEF3FB;color:#12306E">LISTA DE ESTUDIANTES · Fecha: ${esc(asisFechaLarga(f))}</th></tr>
     <tr><th style="width:90px;text-align:left">Grado</th><th style="width:44px">N°</th><th style="width:230px;text-align:left">Nombre</th><th style="text-align:left">Observaciones</th></tr></thead>
     <tbody>${filas}</tbody></table></div>
-    <p class="nota-chica">Solo aparecen los estudiantes marcados Ausente ese día. Cambia la fecha con el calendario; al abrir siempre empieza en hoy.</p></div>`;
+    <p class="nota-chica">Solo aparecen los estudiantes marcados ausentes (sin justificación o justificados) ese día. Cambia la fecha con el calendario; al abrir siempre empieza en hoy.</p></div>`;
 }
 function asisImprimirAusentes(){
   const f = asisFechaAusentes(), lista = asisAusentesDelDia(f, viewState.asisGradoAus || '');
   if(!lista.length){ showToast('No hay ausentes en esa fecha.'); return; }
   const q = s => String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  const filas = lista.map(({g,e,n})=>{
+  const filas = lista.map(({g,e,n,m})=>{
     const mot = asisDatos().mot[g+'|'+f+'|'+e.id] || '', obs = asisDatos().obs[g+'|'+f+'|'+e.id] || '';
-    return '<tr><td>'+q(g)+'</td><td style="text-align:center">'+n+'</td><td>'+q(nombresDe(e)+' '+apellidosDe(e))+'</td><td>'+q([mot,obs].filter(Boolean).join(' — '))+'</td></tr>';
+    return '<tr><td>'+q(g)+'</td><td style="text-align:center">'+n+'</td><td>'+q(nombresDe(e)+' '+apellidosDe(e))+'</td><td>'+q([m==='J'?'Justificado':'Sin justificación',mot,obs].filter(Boolean).join(' — '))+'</td></tr>';
   }).join('');
   const cierre = '<' + '/script>';
   const html = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Ausentes del día</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h2{margin:0 0 4px;text-align:center}p{text-align:center;margin:0 0 14px}table{width:100%;border-collapse:collapse;font-size:13px}th,td{border:1px solid #444;padding:6px 8px}th{background:#eee}</style></head><body><h2>LISTA DE ESTUDIANTES</h2><p>Fecha: '+q(asisFechaLarga(f))+'</p><table><thead><tr><th>Grado</th><th>N°</th><th>Nombre</th><th>Observaciones</th></tr></thead><tbody>'+filas+'</tbody></table><script>window.onload=function(){setTimeout(function(){window.print();},300);};'+cierre+'</body></html>';
@@ -5037,7 +5037,7 @@ function renderAsistencia(){
   const grados = DB.config.grados || [];
   const head = `<div class="page-head"><p class="page-eyebrow">Registro</p>
     <h1 class="page-title">Asistencia <span class="as-lock">🔒 solo Mantenimiento</span></h1>
-    <p class="page-desc">Se marca por día y se cuenta por semana y por período. Presente, tardía y justificada cuentan como asistencia; solo ausente es inasistencia.</p></div>`;
+    <p class="page-desc">Se marca por día y se cuenta por semana y por período. Presente, tardía y ausente justificado cuentan como asistencia; solo el ausente sin justificación es inasistencia.</p></div>`;
   if(!grados.length) return head + `<div class="card"><p class="empty">Todavía no hay grados creados.</p></div>`;
   const grado = asisGradoSel(), p = asisPeriodoSel();
   const tab = ['lista','semana','resumen','ausentes','pendientes'].includes(getPref('asisTab','lista')) ? getPref('asisTab','lista') : 'lista';
@@ -5075,16 +5075,16 @@ function asisListaHtml(grado, p){
     const m = asisMarca(grado, f, e.id);
     const btns = ['P','T','A','J'].map(c=>`<button class="as-b ${m===c?'as-'+c+' on':''}" onclick="asisMarcar('${esc(grado)}','${f}','${e.id}','${c}')">${ASIS_COD[c]}</button>`).join('');
     let mot = '';
-    if(m==='A' || m==='J'){
+    if(m==='J'){
       const cur = asisDatos().mot[grado+'|'+f+'|'+e.id] || '';
-      const lista = m==='A' ? ASIS_MOTIVOS_A : ASIS_MOTIVOS_J;
-      mot = `<div class="as-mo">Motivo: ${lista.map(x=>`<button class="as-p ${cur===x?'on '+(m==='A'?'as-A':'as-J'):''}" onclick="asisMotivo('${esc(grado)}','${f}','${e.id}','${esc(x)}')">${x}</button>`).join('')}</div>`;
+      const lista = ASIS_MOTIVOS_J;
+      mot = `<div class="as-mo">Motivo: ${lista.map(x=>`<button class="as-p ${cur===x?'on as-J':''}" onclick="asisMotivo('${esc(grado)}','${f}','${e.id}','${esc(x)}')">${x}</button>`).join('')}</div>`;
     }
     return `<div class="as-r"><div class="as-top"><span>${i+1}. ${esc(asisNombre(e))}</span><span class="as-bs">${btns}</span></div>${mot}</div>`;
   }).join('');
   const cuenta = {P:0,T:0,A:0,J:0}; ests.forEach(e=>{ const m = asisMarca(grado,f,e.id); if(m) cuenta[m]++; });
   return dias + acciones + (filas || '<div class="card"><p class="empty">No hay estudiantes en esta aula.</p></div>') +
-    `<div class="as-resumen-dia">Hoy: ${cuenta.P} presentes · ${cuenta.T} tardías · ${cuenta.A} ausentes · ${cuenta.J} justificadas</div>`;
+    `<div class="as-resumen-dia">Hoy: ${cuenta.P} presentes · ${cuenta.T} tardías · ${cuenta.A} ausentes sin justificación · ${cuenta.J} ausentes justificados</div>`;
 }
 function asisSemanaHtml(grado, p){
   const ss = asisSemanas(p), sem = ss[asisSemanaSel(p)] || [];
@@ -5113,7 +5113,7 @@ function asisResumenHtml(grado, p){
   const pc = k => (base ? tot[k]/base*100 : 0);
   const asistencia = pc('P')+pc('T')+pc('J');
   const kp = (v,l,cl)=>`<div class="as-k"><b class="${cl}">${v}</b><span>${l}</span></div>`;
-  const kpis = `<div class="as-k4">${kp(asistencia.toFixed(0)+'%','Asistencia (presente, tardía y justificada)','as-tP')}${kp(pc('A').toFixed(0)+'%','Inasistencia (ausente)','as-tA')}${kp(pc('T').toFixed(0)+'%','Tardías','as-tT')}${kp(pc('J').toFixed(0)+'%','Justificadas','as-tJ')}${kp(dias.length+' días','Días de clase con lista tomada','')}</div>`;
+  const kpis = `<div class="as-k4">${kp(asistencia.toFixed(0)+'%','Asistencia (presente, tardía y justificado)','as-tP')}${kp(pc('A').toFixed(0)+'%','Inasistencia (ausente sin justificación)','as-tA')}${kp(pc('T').toFixed(0)+'%','Tardías','as-tT')}${kp(pc('J').toFixed(0)+'%','Justificadas','as-tJ')}${kp(dias.length+' días','Días de clase con lista tomada','')}</div>`;
   // por semana
   const bars = asisSemanas(p).map((s,i)=>{
     const c = {P:0,T:0,A:0,J:0}; let n = 0;
@@ -5123,10 +5123,10 @@ function asisResumenHtml(grado, p){
     return `<div class="as-bw"><div class="as-st">${['P','T','A','J'].map(h).join('')}</div>S${i+1}</div>`;
   }).join('');
   const grados = `conic-gradient(var(--asP) 0 ${pc('P').toFixed(2)}%, var(--asT) 0 ${(pc('P')+pc('T')).toFixed(2)}%, var(--asA) 0 ${(pc('P')+pc('T')+pc('A')).toFixed(2)}%, var(--asJ) 0 100%)`;
-  const lg = [['P','Presente'],['T','Tardía'],['A','Ausente'],['J','Justificada']].map(([k,t])=>`<span><i class="as-dot as-bg-${k}"></i>${t} ${pc(k).toFixed(0)}%</span>`).join('');
+  const lg = [['P','Presente'],['T','Tardía'],['A','Ausente sin justificación'],['J','Ausente justificado']].map(([k,t])=>`<span><i class="as-dot as-bg-${k}"></i>${t} ${pc(k).toFixed(0)}%</span>`).join('');
   // motivos
   const mot = {}; 
-  dias.forEach(d=>ests.forEach(e=>{ const m = asisMarca(grado,d,e.id); if(m==='A'||m==='J'){ const x = asisDatos().mot[grado+'|'+d+'|'+e.id] || 'Sin motivo anotado'; mot[x]=(mot[x]||0)+1; } }));
+  dias.forEach(d=>ests.forEach(e=>{ const m = asisMarca(grado,d,e.id); if(m==='J'){ const x = asisDatos().mot[grado+'|'+d+'|'+e.id] || 'Sin motivo anotado'; mot[x]=(mot[x]||0)+1; } }));
   const mm = Object.entries(mot).sort((a,b)=>b[1]-a[1]), mx = mm.length ? mm[0][1] : 1;
   const motHtml = mm.length ? mm.map(([k,v])=>`<div class="as-mb"><span>${esc(k)}</span><i style="width:${Math.max(6,v/mx*140)}px"></i><em>${v}</em></div>`).join('') : '<p class="nota-chica">Sin ausencias ni justificadas.</p>';
   const filas = porEst.map(({e,c},i)=>`<tr><td>${i+1}. ${esc(asisNombre(e))}</td><td class="as-tP">${c.P}</td><td class="as-tT">${c.T}</td><td class="as-tA">${c.A}</td><td class="as-tJ">${c.J}</td><td>${c.total}</td><td>${asisPorcentaje(c).toFixed(1)}%</td>
@@ -5134,8 +5134,8 @@ function asisResumenHtml(grado, p){
   return `${kpis}
   <div class="as-g2"><div class="card"><div class="card-title">Por semana</div><div class="as-bars">${bars}</div><div class="as-lg">${lg}</div></div>
   <div class="card"><div class="card-title">Todo el período</div><div class="as-donut" style="background:${grados}"><span>${asistencia.toFixed(0)}%</span></div><div class="as-lg" style="text-align:center">asistencia</div>
-  <div class="card-title" style="margin-top:12px">Motivos de ausencia</div>${motHtml}</div></div>
-  <div class="card"><div class="card-title">Por estudiante</div><div class="table-wrap"><table class="as-tabla"><thead><tr><th>Estudiante</th><th>Presente</th><th>Tardías</th><th>Ausentes</th><th>Justif.</th><th>Total días</th><th>% inasist.</th><th>Para la boleta</th></tr></thead><tbody>${filas}</tbody></table></div>
+  <div class="card-title" style="margin-top:12px">Motivos de las ausencias justificadas</div>${motHtml}</div></div>
+  <div class="card"><div class="card-title">Por estudiante</div><div class="table-wrap"><table class="as-tabla"><thead><tr><th>Estudiante</th><th>Presente</th><th>Tardías</th><th>Sin justificar</th><th>Justificados</th><th>Total días</th><th>% inasist.</th><th>Para la boleta</th></tr></thead><tbody>${filas}</tbody></table></div>
   <p class="nota-chica"><b>9%/43</b> = 9% de inasistencia sobre 43 días de clase. Los días se cuentan solo cuando se tomó lista y no son feriados. Las justificadas cuentan como asistencia.</p>
   <div class="btn-row"><button class="btn btn-primary" onclick="asisPasarTodasABoleta('${esc(grado)}',${p})">Pasar todo el grupo a las boletas</button></div></div>`;
 }
