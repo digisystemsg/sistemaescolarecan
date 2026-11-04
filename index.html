@@ -778,7 +778,7 @@ if('serviceWorker' in navigator){
    Cada entrega lleva un número de versión. Al abrir la plataforma (y cada cierto rato, o al volver a la
    pestaña) se compara con la versión publicada; si es distinta, aparece un aviso discreto abajo.
    Si es la misma, no pasa nada. Súbele el número cada vez que se publique una actualización. */
-const APP_VERSION = '2026-11-04-1500';
+const APP_VERSION = '2026-11-04-1445';
 let _avisoVersionMostrado = false, _ultimaRevisionVersion = 0;
 async function revisarVersionNueva(){
   if(_avisoVersionMostrado) return;
@@ -5015,20 +5015,26 @@ function asisImprimirAusentes(){
   v.document.write(html); v.document.close();
   showToast('En el diálogo de impresión elige "Guardar como PDF".');
 }
-/* Días de clase (lunes a viernes, antes de hoy) sin lista tomada, por aula y mes */
-function asisPendientes(){
-  const hoy = asisHoyLocal(), out = {}; const meses = new Set();
+/* Días de clase (lunes a viernes, antes de hoy) sin lista tomada, de un período, por aula y mes */
+function asisPendientes(p){
+  const hoy = asisHoyLocal(), out = {}, meses = new Set();
+  const r = asisRango(p);
+  if(r){ let m = r.ini.slice(0,7); const ultimo = (r.fin < hoy ? r.fin : asisSumaDias(hoy,-1)).slice(0,7);
+    while(m <= ultimo){ meses.add(m); const y = Number(m.slice(0,4)), mo = Number(m.slice(5)); m = mo===12 ? (y+1)+'-01' : y+'-'+String(mo+1).padStart(2,'0'); } }
   (DB.config.grados || []).forEach(g=>{
     out[g] = {};
-    for(let p=1;p<=4;p++){
-      asisSemanas(p).forEach(s=>s.forEach(f=>{
-        if(f>=hoy || asisEsLibre(f) || asisDiaTieneLista(g, f)) return;
-        const m = f.slice(0,7); meses.add(m);
-        (out[g][m] = out[g][m] || []).push(f);
-      }));
-    }
+    asisSemanas(p).forEach(s=>s.forEach(f=>{
+      if(f>=hoy || asisEsLibre(f) || asisDiaTieneLista(g, f)) return;
+      (out[g][f.slice(0,7)] = out[g][f.slice(0,7)] || []).push(f);
+    }));
   });
   return {datos: out, meses: Array.from(meses).sort()};
+}
+function asisPeriodoPendSel(){
+  const v = Number(viewState.pendPer); if(v>=1 && v<=4 && asisRango(v)) return v;
+  const hoy = asisHoyLocal(); let sel = 0;
+  for(let p=1;p<=4;p++){ const r = asisRango(p); if(r && r.ini<=hoy) sel = p; }
+  return sel || [1,2,3,4].find(p=>asisRango(p)) || 1;
 }
 function asisIrA(grado, f){
   const p = asisPeriodoDe(f); if(!p) return;
@@ -5038,14 +5044,21 @@ function asisIrA(grado, f){
 }
 function asisPendientesHtml(){
   if(![1,2,3,4].some(p=>asisRango(p))) return `<div class="card"><p class="empty">Todavía no hay fechas de períodos. Ponlas en Seguimiento de docentes → Fecha de inicio y final de cada período.</p></div>`;
-  const {datos, meses} = asisPendientes();
+  const p = asisPeriodoPendSel();
+  const tabsP = `<div style="display:flex;gap:6px;margin:0 0 12px;flex-wrap:wrap">${[1,2,3,4].map(n=>`<button class="btn btn-sm ${n===p?'btn-primary':''}" ${asisRango(n)?'':'disabled style="opacity:.45"'} onclick="viewState.pendPer=${n}; render();">Período ${n}</button>`).join('')}</div>`;
+  const r = asisRango(p);
+  const rango = r ? `<p class="nota-chica" style="margin:0 0 10px;">Período ${p}: del ${asisFechaCorta(r.ini)} al ${asisFechaCorta(r.fin)}.</p>` : '';
+  const {datos, meses} = asisPendientes(p);
   const NM = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  if(!meses.length) return `<div class="card"><p class="empty">Todos los grados tienen asistencia al día. 🎉</p></div>`;
+  if(!meses.length) return `<div class="card"><p class="card-title">Fechas detalladas en que falta pasar asistencia</p>${tabsP}${rango}<p class="empty">Este período todavía no empieza.</p></div>`;
+  const hay = (DB.config.grados||[]).some(g=>meses.some(m=>(datos[g][m]||[]).length));
   const filas = (DB.config.grados || []).map(g=>`<tr><td style="font-weight:600;text-align:left">${esc(g)}</td>${meses.map(m=>{
     const dias = datos[g][m] || [];
     return `<td style="color:#B5445A;font-weight:600">${dias.map(f=>`<a href="#" style="color:inherit" title="Pasar esta lista" onclick="asisIrA('${esc(g)}','${f}'); return false;">${Number(f.slice(8))}</a>`).join(', ')}</td>`;
   }).join('')}</tr>`).join('');
-  return `<div class="card"><p class="card-title">Fechas detalladas en que falta pasar asistencia</p><div class="table-wrap"><table class="as-tabla">
+  return `<div class="card"><p class="card-title">Fechas detalladas en que falta pasar asistencia</p>${tabsP}${rango}
+    ${hay ? '' : '<p class="nota-chica" style="color:#2A7A5A;font-weight:600">Todos los grados tienen la asistencia al día en este período. 🎉</p>'}
+    <div class="table-wrap"><table class="as-tabla">
     <thead><tr><th style="text-align:left;width:150px">Aula</th>${meses.map(m=>`<th>${NM[Number(m.slice(5))].toUpperCase()}</th>`).join('')}</tr></thead><tbody>${filas}</tbody></table></div>
     <p class="nota-chica">Cuenta los días de clase (lunes a viernes) anteriores a hoy en que ese grado no tiene lista. Los días sin clase no se cuentan. Toca una fecha para ir a pasar esa lista.</p></div>`;
 }
