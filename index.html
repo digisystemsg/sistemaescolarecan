@@ -778,7 +778,7 @@ if('serviceWorker' in navigator){
    Cada entrega lleva un número de versión. Al abrir la plataforma (y cada cierto rato, o al volver a la
    pestaña) se compara con la versión publicada; si es distinta, aparece un aviso discreto abajo.
    Si es la misma, no pasa nada. Súbele el número cada vez que se publique una actualización. */
-const APP_VERSION = '2026-11-04-1350';
+const APP_VERSION = '2026-11-04-1500';
 let _avisoVersionMostrado = false, _ultimaRevisionVersion = 0;
 async function revisarVersionNueva(){
   if(_avisoVersionMostrado) return;
@@ -2666,7 +2666,7 @@ function combinarDocs(local, nube, preferirNube){
     },
     pausa: nube.pausa || local.pausa || {activa:false},
     presencia: Object.assign({}, local.presencia||{}, nube.presencia||{}),
-    asistencia: {reg:Object.assign({}, (local.asistencia||{}).reg||{}, (nube.asistencia||{}).reg||{}), mot:Object.assign({}, (local.asistencia||{}).mot||{}, (nube.asistencia||{}).mot||{}), libre:Object.assign({}, (local.asistencia||{}).libre||{}, (nube.asistencia||{}).libre||{}), obs:Object.assign({}, (local.asistencia||{}).obs||{}, (nube.asistencia||{}).obs||{})},
+    asistencia: {reg:Object.assign({}, (local.asistencia||{}).reg||{}, (nube.asistencia||{}).reg||{}), mot:Object.assign({}, (local.asistencia||{}).mot||{}, (nube.asistencia||{}).mot||{}), libre:Object.assign({}, (local.asistencia||{}).libre||{}, (nube.asistencia||{}).libre||{}), obs:Object.assign({}, (local.asistencia||{}).obs||{}, (nube.asistencia||{}).obs||{}), retiros:Object.assign({}, (local.asistencia||{}).retiros||{}, (nube.asistencia||{}).retiros||{}), horarios:Object.assign({}, (local.asistencia||{}).horarios||{}, (nube.asistencia||{}).horarios||{})},
     complemento: Object.assign({}, local.complemento||{}, nube.complemento||{}),
     accesos: (nube.accesos||[]).concat((local.accesos||[]).filter(l=>!(nube.accesos||[]).some(x=>x.ts===l.ts&&x.id===l.id))).slice(-400),
     avisos: (nube.avisos||[]).concat((local.avisos||[]).filter(l=>!(nube.avisos||[]).some(x=>x.id===l.id))).slice(-40),
@@ -4792,9 +4792,9 @@ function doLogout(){
    DB.asistencia = { reg:{'grado|AAAA-MM-DD':{estId:'P'|'T'|'A'|'J'}}, mot:{'grado|fecha|estId':'texto'}, libre:{'AAAA-MM-DD':'motivo'} }
    Presente, Tardía y Justificada cuentan como asistencia. Solo Ausente sin justificación (A) es inasistencia. */
 const ASIS_MOTIVOS_A = ['Enfermedad','Asunto familiar','Viaje','Transporte','Sin aviso','Otro'];
-const ASIS_MOTIVOS_J = ['Cita médica','Enfermedad','Asunto familiar','Permiso de la escuela','Otro'];
+const ASIS_MOTIVOS_J = ['Cita médica','Enfermedad','Asunto familiar','Viaje','Transporte','Permiso de la escuela','Otro'];
 const ASIS_COD = {P:'Presente', T:'Tardía', A:'Ausente sin justificación', J:'Ausente justificado'};
-function asisDatos(){ if(!DB.asistencia) DB.asistencia = {}; const a = DB.asistencia; a.reg = a.reg||{}; a.mot = a.mot||{}; a.libre = a.libre||{}; a.obs = a.obs||{}; return a; }
+function asisDatos(){ if(!DB.asistencia) DB.asistencia = {}; const a = DB.asistencia; a.reg = a.reg||{}; a.mot = a.mot||{}; a.libre = a.libre||{}; a.obs = a.obs||{}; a.retiros = a.retiros||{}; a.horarios = a.horarios||{}; return a; }
 function asisPuede(){ return !!currentUser && puedeCambiarVista(currentUser); }
 function asisSumaDias(iso, n){ const d = new Date(iso+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); }
 function asisDiaSemana(iso){ return new Date(iso+'T00:00:00Z').getUTCDay(); }   // 0 dom ... 6 sáb
@@ -4847,9 +4847,15 @@ function asisEstudiantes(grado, p){ return ordenarEstudiantes(estudiantesDelGrad
 function asisNombre(e){ return apellidosDe(e)+', '+(typeof nombresDe==='function' ? nombresDe(e) : ''); }
 
 /* --- edición --- */
+function asisPrellenar(doc, grado, f){
+  const k = grado+'|'+f; const a = doc.asistencia; a.reg[k] = a.reg[k] || {};
+  if(Object.keys(a.reg[k]).length) return;
+  asisEstudiantes(grado, asisPeriodoDe(f) || asisPeriodoSel()).forEach(e=>{ a.reg[k][e.id] = 'P'; });
+}
 function asisMarcar(grado, f, estId, cod){
   commit(doc=>{
     const a = doc.asistencia = doc.asistencia || {}; a.reg = a.reg||{}; a.mot = a.mot||{}; a.libre = a.libre||{};
+    asisPrellenar(doc, grado, f);
     const k = grado+'|'+f; a.reg[k] = a.reg[k] || {};
     if(!cod || a.reg[k][estId]===cod){ delete a.reg[k][estId]; delete a.mot[k+'|'+estId]; }
     else { a.reg[k][estId] = cod; if(cod==='P'||cod==='T') delete a.mot[k+'|'+estId]; }
@@ -4859,10 +4865,11 @@ function asisMarcar(grado, f, estId, cod){
 }
 function asisCiclo(grado, f, estId){
   const sec = ['', 'P', 'T', 'A', 'J'];
-  const i = sec.indexOf(asisMarca(grado, f, estId));
+  const i = sec.indexOf(asisMarca(grado, f, estId) || 'P');
   const sig = sec[(i+1)%sec.length];
   commit(doc=>{
     const a = doc.asistencia = doc.asistencia || {}; a.reg = a.reg||{}; a.mot = a.mot||{}; a.libre = a.libre||{};
+    asisPrellenar(doc, grado, f);
     const k = grado+'|'+f; a.reg[k] = a.reg[k] || {};
     if(!sig){ delete a.reg[k][estId]; delete a.mot[k+'|'+estId]; } else { a.reg[k][estId] = sig; if(sig==='P'||sig==='T') delete a.mot[k+'|'+estId]; }
     if(Object.keys(a.reg[k]).length===0) delete a.reg[k];
@@ -5042,6 +5049,220 @@ function asisPendientesHtml(){
     <thead><tr><th style="text-align:left;width:150px">Aula</th>${meses.map(m=>`<th>${NM[Number(m.slice(5))].toUpperCase()}</th>`).join('')}</tr></thead><tbody>${filas}</tbody></table></div>
     <p class="nota-chica">Cuenta los días de clase (lunes a viernes) anteriores a hoy en que ese grado no tiene lista. Los días sin clase no se cuentan. Toca una fecha para ir a pasar esa lista.</p></div>`;
 }
+/* ---- Asistencia: Retiros temprano ----
+   DB.asistencia.retiros = { id: {id, grado, estId, fecha:'AAAA-MM-DD', hora:'HH:MM', obs} }
+   Lo que pierde sale de DB.horarios[grado][díaDeSemana 1..5] = [{ini:'07:40', fin:'08:20', materia:'MATH', tipo:'clase'|'receso'|'almuerzo'}]
+   (el panel "Horarios por grados" llegará después; mientras no haya horario, solo se guarda el retiro). */
+/* ============================= HORARIOS POR GRADOS =============================
+   DB.asistencia.horarios[grado] = [ {id, desde:'AAAA-MM-DD', filas:[{ini:'07:40', fin:'08:20', c:{1:'MATH',2:'MATH',...5:''}}]} ]
+   Cada cambio de horario es una versión nueva con su fecha; las anteriores no se borran. */
+function asisVersiones(g){ return ((asisDatos().horarios||{})[g]||[]).slice().sort((a,b)=>(a.desde||'').localeCompare(b.desde||'')); }
+function asisVersionPara(g, f){ let v = null; asisVersiones(g).forEach(x=>{ if(x.desde<=f) v = x; }); return v; }
+function asisNumVersion(g, v){ return asisVersiones(g).findIndex(x=>x.id===v.id)+1; }
+function asisTipoCelda(t){ t = String(t||'').trim(); if(!t) return ''; if(/^receso/i.test(t)) return 'receso'; if(/^almuerzo/i.test(t)) return 'almuerzo'; return 'clase'; }
+function asisBloquesDe(v, dow){
+  const out = [];
+  ((v && v.filas) || []).forEach(r=>{ const t = String((r.c||{})[dow]||'').trim(); if(!t) return; out.push({ini:r.ini, fin:r.fin, materia:t, tipo:asisTipoCelda(t)}); });
+  return out;
+}
+function asisHorarioDia(grado, fecha){ const v = asisVersionPara(grado, fecha); return v ? asisBloquesDe(v, asisDiaSemana(fecha)) : null; }
+function asisH12(min){ let h = Math.floor(min/60); const m = min%60; h = h%12 || 12; return h+':'+String(m).padStart(2,'0'); }
+function asisRangoTxt(r){ const a = asisMin(r.ini), b = asisMin(r.fin); return (a===null||b===null) ? '' : asisH12(a)+'-'+asisH12(b); }
+function asisParseRango(txt){
+  const m = /(\d{1,2})[:.](\d{2})\s*(?:-|–|—|a)\s*(\d{1,2})[:.](\d{2})/.exec(String(txt||''));
+  if(!m) return null;
+  const fix = h => (h>=1 && h<=6) ? h+12 : h;
+  const a = fix(Number(m[1]))*60+Number(m[2]), b = fix(Number(m[3]))*60+Number(m[4]);
+  const f = n => String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0');
+  return {ini:f(a), fin:f(b)};
+}
+function asisHorMut(g, vid, fn){
+  commit(doc=>{ const a = doc.asistencia = doc.asistencia || {}; a.horarios = a.horarios || {}; const v = (a.horarios[g]||[]).find(x=>x.id===vid); if(v) fn(v); });
+}
+function asisHorGrado(){ const gs = DB.config.grados || []; return (viewState.horGrado && gs.includes(viewState.horGrado)) ? viewState.horGrado : (gs[0]||''); }
+function asisHorVersion(g){
+  const vs = asisVersiones(g); if(!vs.length) return null;
+  const sel = vs.find(x=>x.id===viewState.horVer); if(sel) return sel;
+  return asisVersionPara(g, asisHoyLocal()) || vs[vs.length-1];
+}
+function asisHorNuevo(g){
+  const base = asisHorVersion(g);
+  const id = 'hor_'+Date.now().toString(36)+Math.random().toString(36).slice(2,4);
+  const filas = base ? JSON.parse(JSON.stringify(base.filas)) : [{ini:'07:40', fin:'08:20', c:{1:'',2:'',3:'',4:'',5:''}}];
+  let desde = asisHoyLocal();
+  if(!base){ const p1 = ((DB.config.periodosFechas||[])[0]||{}).inicio; if(p1) desde = p1; }
+  commit(doc=>{ const a = doc.asistencia = doc.asistencia || {}; a.horarios = a.horarios || {}; (a.horarios[g] = a.horarios[g] || []).push({id, desde, filas}); });
+  viewState.horVer = id; render();
+}
+function asisHorDesde(g, vid, val){ if(!val) return; asisHorMut(g, vid, v=>{ v.desde = val; }); render(); }
+function asisHorHora(g, vid, i, txt){
+  const r = asisParseRango(txt); if(!r){ showToast('Escribe la hora así: 7:40-8:20'); render(); return; }
+  asisHorMut(g, vid, v=>{ if(v.filas[i]){ v.filas[i].ini = r.ini; v.filas[i].fin = r.fin; } }); render();
+}
+function asisHorCelda(g, vid, i, d, txt){ asisHorMut(g, vid, v=>{ if(v.filas[i]){ v.filas[i].c = v.filas[i].c || {}; v.filas[i].c[d] = String(txt||'').trim().toUpperCase(); } }); render(); }
+function asisHorFila(g, vid, accion, i){
+  asisHorMut(g, vid, v=>{
+    if(accion==='mas'){ const u = v.filas[v.filas.length-1]; v.filas.push({ini:u?u.fin:'07:40', fin:u?u.fin:'08:20', c:{1:'',2:'',3:'',4:'',5:''}}); }
+    else if(accion==='menos'){ v.filas.splice(i,1); }
+  }); render();
+}
+function asisHorEliminar(g, vid){
+  if(!confirm('¿Eliminar este horario? Los retiros ya guardados conservan lo que perdieron ese día.')) return;
+  commit(doc=>{ const a = doc.asistencia; if(a && a.horarios && a.horarios[g]) a.horarios[g] = a.horarios[g].filter(x=>x.id!==vid); });
+  viewState.horVer = ''; render();
+}
+function asisHorCopiar(g, vid){
+  const sel = document.getElementById('hor_copiar_a'); const dest = sel ? sel.value : ''; if(!dest) return;
+  const v = asisVersiones(g).find(x=>x.id===vid); if(!v) return;
+  const nid = 'hor_'+Date.now().toString(36)+Math.random().toString(36).slice(2,4);
+  commit(doc=>{ const a = doc.asistencia; a.horarios[dest] = (a.horarios[dest]||[]).filter(x=>x.desde!==v.desde); a.horarios[dest].push({id:nid, desde:v.desde, filas:JSON.parse(JSON.stringify(v.filas))}); });
+  showToast('Horario copiado a '+dest+'.'); 
+}
+function asisHorPegarAbrir(){ viewState.horPegar = true; render(); }
+function asisHorPegarCerrar(){ viewState.horPegar = false; render(); }
+function asisHorPegarAplicar(g, vid){
+  const el = document.getElementById('hor_pegar_txt'); const txt = el ? el.value : '';
+  const filas = [];
+  txt.split(/\r?\n/).forEach(l=>{
+    const cols = l.split('\t'); const r = asisParseRango(cols[0]); if(!r) return;
+    const c = {}; for(let d=1; d<=5; d++) c[d] = String(cols[d]||'').replace(/\(.*?\)/g,'').replace(/\s+/g,' ').trim().toUpperCase();
+    filas.push({ini:r.ini, fin:r.fin, c});
+  });
+  if(!filas.length){ showToast('No encontré filas con hora (ej.: 7:40-8:20) separadas por tabulación.'); return; }
+  asisHorMut(g, vid, v=>{ v.filas = filas; });
+  viewState.horPegar = false; showToast('Horario pegado.'); render();
+}
+const ASIS_DIAS5 = ['LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES'];
+function renderHorarios(){
+  if(!asisPuede()) return renderNoAccess();
+  const gs = DB.config.grados || [];
+  const head = `<div class="page-head"><p class="page-eyebrow">Planificación</p><h1 class="page-title">Horarios por grados <span class="as-lock">🔒 solo Mantenimiento</span></h1>
+    <p class="page-desc">Cada vez que el horario cambie, crea uno nuevo con su fecha. Los anteriores se conservan.</p></div>`;
+  if(!gs.length) return head + `<div class="card"><p class="empty">Todavía no hay grados creados.</p></div>`;
+  const g = asisHorGrado(), vs = asisVersiones(g), ver = asisHorVersion(g), hoyV = asisVersionPara(g, asisHoyLocal());
+  const filtro = `<div class="filters"><div class="field"><label>Aula</label><select onchange="viewState.horGrado=this.value; viewState.horVer=''; render();">${gs.map(x=>`<option ${x===g?'selected':''}>${esc(x)}</option>`).join('')}</select></div></div>`;
+  const chip = (t,on,click)=>`<button class="btn btn-sm ${on?'btn-primary':''}" style="border-radius:999px;margin:0 6px 6px 0" onclick="${click}">${t}</button>`;
+  const chips = vs.map((v,i)=>chip('Horario '+(i+1)+' · desde '+asisFechaCorta(v.desde)+(hoyV&&hoyV.id===v.id?' · vigente hoy':''), ver&&ver.id===v.id, `viewState.horVer='${v.id}'; render();`)).join('') + chip('+ Nuevo horario', false, `asisHorNuevo('${esc(g)}')`);
+  if(!ver) return head + filtro + `<div class="card"><p class="empty">Este grado todavía no tiene horario.</p><div class="btn-row"><button class="btn btn-primary" onclick="asisHorNuevo('${esc(g)}')">Crear el primer horario</button></div></div>`;
+  const nombres = Array.from(new Set((DB.asignaturas||[]).map(a=>String(a.nombre||'').toUpperCase()).filter(Boolean).concat(['RECESO','ALMUERZO'])));
+  const dl = `<datalist id="hor_dl">${nombres.map(n=>`<option value="${esc(n)}">`).join('')}</datalist>`;
+  const estilo = t => t==='receso'||t==='almuerzo' ? 'background:#EFE9DC;color:#8A8372;font-style:italic' : (t==='clase' ? 'background:#F1F5FC;font-weight:600;color:#14264F' : 'background:#fff');
+  const filas = ver.filas.map((r,i)=>`<tr><td style="border:1px solid #D7DFEE;padding:4px;width:104px"><input style="width:100%;text-align:center;font-weight:700;border:none;background:transparent" value="${esc(asisRangoTxt(r))}" onchange="asisHorHora('${esc(g)}','${ver.id}',${i},this.value)"></td>${[1,2,3,4,5].map(d=>{ const t = (r.c||{})[d]||''; return `<td style="border:1px solid #D7DFEE;padding:3px;${estilo(asisTipoCelda(t))}"><input list="hor_dl" style="width:100%;text-align:center;border:none;background:transparent;font-size:12.5px;${asisTipoCelda(t)==='clase'?'font-weight:600':''}" value="${esc(t)}" onchange="asisHorCelda('${esc(g)}','${ver.id}',${i},${d},this.value)"></td>`; }).join('')}<td style="border:none;width:26px"><button class="icon-btn" title="Quitar fila" onclick="asisHorFila('${esc(g)}','${ver.id}','menos',${i})">×</button></td></tr>`).join('');
+  const otros = gs.filter(x=>x!==g);
+  const pegar = viewState.horPegar ? `<div class="modal-overlay" style="position:fixed;inset:0;background:rgba(10,20,45,.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:16px"><div class="card" style="max-width:640px;width:100%;margin:0"><p class="card-title">Pegar horario desde Excel</p><p class="nota-chica">Copia la tabla en Excel (las horas y los cinco días, de lunes a viernes) y pégala aquí. Reemplaza las filas de este horario.</p><textarea id="hor_pegar_txt" rows="10" style="width:100%" placeholder="7:40-8:20&#9;CHAPEL&#9;MATH&#9;MATH&#9;LENGUAJE&#9;LENGUAJE"></textarea><div class="btn-row"><button class="btn btn-primary" onclick="asisHorPegarAplicar('${esc(g)}','${ver.id}')">Aplicar</button><button class="btn" onclick="asisHorPegarCerrar()">Cancelar</button></div></div></div>` : '';
+  return head + filtro + `<div class="card">
+    <div style="margin-bottom:6px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#6B7A99">Horarios de este grado</div>
+    <div>${chips}</div>
+    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin:6px 0 12px">
+      <div class="field"><label>Vigente desde</label><input type="date" value="${esc(ver.desde)}" onchange="asisHorDesde('${esc(g)}','${ver.id}',this.value)"></div>
+      <p class="nota-chica" style="margin:0 0 6px;max-width:560px">Vale desde el ${esc(asisFechaCorta(ver.desde))} hasta el día antes del siguiente horario. Los retiros ya guardados conservan lo que perdieron ese día. Se guarda solo.</p>
+    </div>
+    <div class="table-wrap"><table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr style="background:#1F3A52;color:#fff"><th style="padding:8px">HORA</th>${ASIS_DIAS5.map(d=>`<th>${d}</th>`).join('')}<th></th></tr></thead><tbody>${filas}</tbody></table></div>
+    ${dl}
+    <p class="nota-chica">Escribe RECESO o ALMUERZO en las celdas que no son clase. Deja vacío donde no hay clase. La hora se escribe así: 7:40-8:20.</p>
+    <div class="btn-row"><button class="btn" onclick="asisHorFila('${esc(g)}','${ver.id}','mas')">+ Agregar fila de hora</button><button class="btn" onclick="asisHorPegarAbrir()">Pegar desde Excel</button>
+      ${otros.length?`<span style="display:inline-flex;gap:6px;align-items:center"><select id="hor_copiar_a">${otros.map(x=>`<option>${esc(x)}</option>`).join('')}</select><button class="btn" onclick="asisHorCopiar('${esc(g)}','${ver.id}')">Copiar a otro grado</button></span>`:''}
+      <button class="btn btn-danger" onclick="asisHorEliminar('${esc(g)}','${ver.id}')">Eliminar este horario</button></div>
+  </div>${pegar}`;
+}
+function asisMin(hhmm){ const m = /^(\d{1,2}):(\d{2})/.exec(hhmm||''); return m ? Number(m[1])*60+Number(m[2]) : null; }
+function asisHora12(hhmm){ const m = asisMin(hhmm); if(m===null) return ''; let h = Math.floor(m/60); const mi = m%60; const ap = h>=12 ? 'p. m.' : 'a. m.'; h = h%12 || 12; return h+':'+String(mi).padStart(2,'0')+' '+ap; }
+/* Devuelve [{materia, horas, min}] o null si no hay horario cargado para ese día */
+function asisPierde(grado, fecha, hora){
+  const dia = asisHorarioDia(grado, fecha), t = asisMin(hora);
+  if(!dia || t===null) return null;
+  const acc = {}, orden = [];
+  dia.forEach(b=>{
+    if(b.tipo && b.tipo!=='clase') return;
+    const a = asisMin(b.ini), z = asisMin(b.fin); if(a===null || z===null || z<=t) return;
+    const k = b.materia || 'Clase'; if(!acc[k]){ acc[k] = {materia:k, horas:0, min:0}; orden.push(k); }
+    if(a>=t) acc[k].horas++; else acc[k].min += (z-t);
+  });
+  return orden.map(k=>acc[k]);
+}
+function asisTextoPierde(x){
+  const p = [];
+  if(x.horas) p.push(x.horas+(x.horas===1?' hora clase':' horas clase'));
+  if(x.min) p.push((x.horas?'con ':'')+x.min+' min');
+  return p.join(' ');
+}
+function asisRetirosDe(fecha){
+  const r = asisDatos().retiros || {};
+  return Object.values(r).filter(x=>x.fecha===fecha).sort((a,b)=>(a.hora||'').localeCompare(b.hora||''));
+}
+function asisRetiroGuardar(){
+  const g = viewState.retGrado || (DB.config.grados||[])[0] || '', est = viewState.retEst || '';
+  const f = viewState.retFecha || asisHoyLocal(), hora = viewState.retHora || '';
+  const obsEl = document.getElementById('ret_obs'); const obs = obsEl ? obsEl.value.trim() : '';
+  if(!g || !est){ showToast('Elige el aula y el estudiante.'); return; }
+  if(!hora){ showToast('Pon la hora de salida.'); return; }
+  const id = 'ret_'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+  const ver = asisVersionPara(g, f), pierde = asisPierde(g, f, hora);
+  commit(doc=>{ const a = doc.asistencia = doc.asistencia || {}; a.retiros = a.retiros || {}; a.retiros[id] = {id, grado:g, estId:est, fecha:f, hora, obs, pierde, verId: ver?ver.id:'', verDesde: ver?ver.desde:''}; });
+  viewState.retEst = ''; viewState.retHora = ''; viewState.retObs = '';
+  showToast('Retiro guardado.'); render();
+}
+function asisRetiroQuitar(id){
+  if(!confirm('¿Quitar este retiro?')) return;
+  commit(doc=>{ if(doc.asistencia && doc.asistencia.retiros) delete doc.asistencia.retiros[id]; });
+  render();
+}
+function asisComprobarHtml(){
+  const id = viewState.retCheck; if(!id) return '';
+  const r = (asisDatos().retiros||{})[id]; if(!r){ viewState.retCheck=''; return ''; }
+  const vs = asisVersiones(r.grado);
+  const ver = vs.find(x=>x.id===r.verId) || asisVersionPara(r.grado, r.fecha);
+  const e = DB.estudiantes.find(x=>x.id===r.estId);
+  const shell = inner => `<div style="position:fixed;inset:0;background:rgba(10,20,45,.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:16px" onclick="viewState.retCheck=''; render();"><div class="card" style="max-width:760px;width:100%;margin:0;max-height:90vh;overflow:auto" onclick="event.stopPropagation()">${inner}<div class="btn-row"><button class="btn" onclick="viewState.retCheck=''; render();">Cerrar</button></div></div></div>`;
+  const tit = `<p class="card-title">Horario que estaba vigente ese día</p>`;
+  if(!ver) return shell(tit+`<p class="empty">No había un horario cargado para ${esc(r.grado)} el ${esc(asisFechaLarga(r.fecha))}.</p>`);
+  const dow = asisDiaSemana(r.fecha), t = asisMin(r.hora);
+  const filas = (ver.filas||[]).map(f=>{
+    const txt = String((f.c||{})[dow]||'').trim(); if(!txt) return '';
+    const tipo = asisTipoCelda(txt), a = asisMin(f.ini), z = asisMin(f.fin);
+    let marca = '', bg = '#fff';
+    if(tipo==='clase' && t!==null && z>t){ if(a>=t){ marca = 'Pierde: 1 hora clase'; bg = '#FBE9ED'; } else { marca = 'Pierde '+(z-t)+' min (sale '+asisHora12(r.hora)+')'; bg = '#FDF3E3'; } }
+    if(tipo!=='clase') bg = '#EFE9DC';
+    return `<tr style="background:${bg}"><td style="border:1px solid #D7DFEE;padding:6px 10px;width:110px;font-weight:700">${esc(asisRangoTxt(f))}</td><td style="border:1px solid #D7DFEE;padding:6px 10px;${tipo!=='clase'?'font-style:italic;color:#8A8372':''}">${esc(txt)}</td><td style="border:1px solid #D7DFEE;padding:6px 10px;width:210px;font-size:12.5px;font-weight:600;color:${marca.indexOf('1 hora')>=0?'#B5445A':'#8A5A00'}">${esc(marca)}</td></tr>`;
+  }).join('');
+  return shell(tit+`<div style="color:#41507A;font-size:13.5px;margin:2px 0 12px">${esc(r.grado)}${e?' · '+esc(nombresDe(e)+' '+apellidosDe(e)):''} · ${esc(asisFechaLarga(r.fecha))} · <b>Horario ${asisNumVersion(r.grado, ver)}</b> (vigente desde el ${esc(asisFechaCorta(ver.desde))}) · sale a las ${esc(asisHora12(r.hora))}</div><table style="width:100%;border-collapse:collapse;font-size:13.5px">${filas || '<tr><td>Ese día no tenía clases en el horario.</td></tr>'}</table><p class="nota-chica" style="margin-top:10px">Si el horario cambia después, este retiro conserva lo que se guardó ese día.</p>`);
+}
+function asisRetirosHtml(){
+  const gs = DB.config.grados || [];
+  const g = (viewState.retGrado && gs.includes(viewState.retGrado)) ? viewState.retGrado : (gs[0] || '');
+  const f = viewState.retFecha || asisHoyLocal();
+  const ests = asisEstudiantes(g, asisPeriodoDe(f) || 1);
+  const est = ests.find(e=>e.id===viewState.retEst) ? viewState.retEst : '';
+  const hora = viewState.retHora || '';
+  const form = `<div class="card">
+    <div class="filters" style="margin-bottom:6px">
+      <div class="field"><label>Aula</label><select onchange="viewState.retGrado=this.value; viewState.retEst=''; render();">${gs.map(x=>`<option ${x===g?'selected':''}>${esc(x)}</option>`).join('')}</select></div>
+      <div class="field"><label>Estudiante</label><select style="min-width:230px" onchange="viewState.retEst=this.value; render();"><option value="">Elige un estudiante…</option>${ests.map(e=>`<option value="${e.id}" ${e.id===est?'selected':''}>${esc(asisNombre(e))}</option>`).join('')}</select></div>
+      <div class="field"><label>Fecha</label><input type="date" value="${esc(f)}" onchange="viewState.retFecha=this.value||''; render();"></div>
+      <div class="field"><label>Hora de salida</label><input type="time" value="${esc(hora)}" onchange="viewState.retHora=this.value; render();"></div>
+    </div>
+    <div class="field" style="margin:8px 0 12px"><label>Observaciones</label><input id="ret_obs" placeholder="Ej.: Cita médica, lo recoge su mamá…" style="width:100%" value="${esc(viewState.retObs||'')}" onchange="viewState.retObs=this.value"></div>
+    ${asisPierdeCaja(g, f, hora)}
+    <div class="btn-row"><button class="btn btn-primary" onclick="asisRetiroGuardar()">Guardar retiro</button></div></div>`;
+  const lista = asisRetirosDe(f);
+  const filas = lista.map(r=>{
+    const e = DB.estudiantes.find(x=>x.id===r.estId);
+    const pr = Array.isArray(r.pierde) ? r.pierde : (r.pierde===null ? null : asisPierde(r.grado, r.fecha, r.hora));
+    const txt = pr ? (pr.length ? pr.map(x=>esc(x.materia)+' '+asisTextoPierde(x)).join(' · ') : 'Nada') : '—';
+    return `<tr><td style="text-align:left">${esc(r.grado)}</td><td style="text-align:left">${e?esc(nombresDe(e)+' '+apellidosDe(e)):'(estudiante eliminado)'} <button class="btn btn-sm" style="margin-left:6px" onclick="viewState.retCheck='${r.id}'; render();">Comprobar horario</button></td><td>${esc(asisHora12(r.hora))}</td><td style="text-align:left">${txt}</td><td style="text-align:left">${esc(r.obs||'')}</td><td><button class="icon-btn" title="Quitar" onclick="asisRetiroQuitar('${r.id}')">×</button></td></tr>`;
+  }).join('');
+  const tabla = `<div class="card"><div class="card-title">Retiros del ${esc(asisFechaLarga(f))}</div>${lista.length ? `<div class="table-wrap"><table class="as-tabla as-ret"><thead><tr><th style="text-align:left">Aula</th><th style="text-align:left">Estudiante</th><th>Hora</th><th style="text-align:left">Pierde</th><th style="text-align:left">Observaciones</th><th></th></tr></thead><tbody>${filas}</tbody></table></div>` : '<p class="empty">No hay retiros ese día.</p>'}</div>`;
+  return form + tabla + asisComprobarHtml();
+}
+function asisPierdeCaja(g, f, hora){
+  const base = 'background:#F3F6FC;border:1px solid #DCE5F5;border-radius:14px;padding:14px 16px;margin-bottom:12px';
+  if(!hora) return `<div style="${base}"><div style="font-weight:700;color:#12306E;margin-bottom:4px">Lo que pierde</div><p class="nota-chica" style="margin:0">Pon la hora de salida para ver lo que pierde según el horario del grado.</p></div>`;
+  const pr = asisPierde(g, f, hora);
+  if(pr===null) return `<div style="${base}"><div style="font-weight:700;color:#12306E;margin-bottom:4px">Lo que pierde</div><p class="nota-chica" style="margin:0">Todavía no hay horario de este grado para ese día. Cuando exista el panel “Horarios por grados”, aquí saldrá solo lo que pierde. Por ahora se guarda el retiro con su fecha y hora.</p></div>`;
+  if(!pr.length) return `<div style="${base}"><div style="font-weight:700;color:#12306E">No pierde ninguna clase a esa hora.</div></div>`;
+  return `<div style="${base}"><div style="font-weight:700;color:#12306E;margin-bottom:6px">Lo que pierde (según el horario del grado)</div>${pr.map(x=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px dashed #E1E8F5;font-size:15px"><span>${esc(x.materia)}</span><b style="color:#B5445A">${asisTextoPierde(x)}</b></div>`).join('')}</div>`;
+}
 function renderAsistencia(){
   if(!asisPuede()) return renderNoAccess();
   const grados = DB.config.grados || [];
@@ -5050,11 +5271,12 @@ function renderAsistencia(){
     <p class="page-desc">Se marca por día y se cuenta por semana y por período. Presente, tardía y ausente justificado cuentan como asistencia; solo el ausente sin justificación es inasistencia.</p></div>`;
   if(!grados.length) return head + `<div class="card"><p class="empty">Todavía no hay grados creados.</p></div>`;
   const grado = asisGradoSel(), p = asisPeriodoSel();
-  const tab = ['lista','semana','resumen','ausentes','pendientes'].includes(getPref('asisTab','lista')) ? getPref('asisTab','lista') : 'lista';
+  const tab = ['lista','semana','resumen','ausentes','pendientes','retiros'].includes(getPref('asisTab','lista')) ? getPref('asisTab','lista') : 'lista';
   const tabs = `<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
-    ${[['lista','Pase de lista'],['semana','Semana'],['resumen','Resumen del período'],['ausentes','Ausentes del día'],['pendientes','Fechas pendientes']].map(([k,t])=>`<button class="btn ${tab===k?'btn-primary':''}" onclick="setPref('asisTab','${k}')">${t}</button>`).join('')}</div>`;
+    ${[['lista','Pase de lista'],['semana','Semana'],['resumen','Resumen del período'],['ausentes','Ausentes del día'],['pendientes','Fechas pendientes'],['retiros','Retiros temprano']].map(([k,t])=>`<button class="btn ${tab===k?'btn-primary':''}" onclick="setPref('asisTab','${k}')">${t}</button>`).join('')}</div>`;
   if(tab==='ausentes') return head + tabs + asisAusentesHtml();
   if(tab==='pendientes') return head + tabs + asisPendientesHtml();
+  if(tab==='retiros') return head + tabs + asisRetirosHtml();
   const filtros = `<div class="filters">
     <div class="field"><label>Aula</label><select onchange="setPref('asisGrado',this.value)">${grados.map(g=>`<option ${g===grado?'selected':''}>${esc(g)}</option>`).join('')}</select></div>
     <div class="field"><label>Período</label><select onchange="setPref('asisPer',this.value)">${[1,2,3,4].map(n=>`<option value="${n}" ${n===p?'selected':''}>Período ${n}</option>`).join('')}</select></div></div>`;
@@ -5078,11 +5300,11 @@ function asisListaHtml(grado, p){
   const libre = asisDatos().libre[f];
   const dias = `<div class="as-sem"><span>Día:</span>${sem.map(d=>`<button class="btn btn-sm ${d===f?'btn-primary':''}" onclick="setPref('asisDia','${d}')">${asisNombreDia(d)} ${d.slice(8)}${asisEsLibre(d)?' ⛔':''}</button>`).join('')}</div>`;
   const acciones = `<div class="btn-row" style="margin:6px 0 10px;">
-    <button class="btn btn-primary" onclick="asisTodosPresentes('${esc(grado)}',${p},'${f}')">✓ Todos presentes</button>
+    <button class="btn btn-primary" onclick="asisTodosPresentes('${esc(grado)}',${p},'${f}')">${asisDiaTieneLista(grado,f)?'✓ Todos presentes':'✓ Guardar lista (todos presentes)'}</button>
     <button class="btn" onclick="asisAlternarLibre('${f}')">${libre?'Quitar día sin clase':'Día sin clase (feriado)'}</button></div>`;
   if(libre) return dias + acciones + `<div class="card"><p class="empty">${esc(asisNombreDia(f))} ${asisFechaCorta(f)} marcado sin clases: ${esc(libre)}. No cuenta en los días del período.</p></div>`;
   const filas = ests.map((e,i)=>{
-    const m = asisMarca(grado, f, e.id);
+    const m = asisMarca(grado, f, e.id) || 'P';
     const btns = ['P','T','A','J'].map(c=>`<button class="as-b ${m===c?'as-'+c+' on':''}" onclick="asisMarcar('${esc(grado)}','${f}','${e.id}','${c}')">${ASIS_COD[c]}</button>`).join('');
     let mot = '';
     if(m==='J'){
@@ -5092,8 +5314,9 @@ function asisListaHtml(grado, p){
     }
     return `<div class="as-r"><div class="as-top"><span>${i+1}. ${esc(asisNombre(e))}</span><span class="as-bs">${btns}</span></div>${mot}</div>`;
   }).join('');
-  const cuenta = {P:0,T:0,A:0,J:0}; ests.forEach(e=>{ const m = asisMarca(grado,f,e.id); if(m) cuenta[m]++; });
-  return dias + acciones + (filas || '<div class="card"><p class="empty">No hay estudiantes en esta aula.</p></div>') +
+  const cuenta = {P:0,T:0,A:0,J:0}; ests.forEach(e=>{ const m = asisMarca(grado,f,e.id) || 'P'; cuenta[m]++; });
+  const sinGuardar = !asisDiaTieneLista(grado, f) ? `<div class="nota-chica" style="margin:0 0 10px;padding:10px 12px;border:1px dashed #E0B15A;background:#FFF8EA;border-radius:10px;color:#7A5A12">Esta lista todavía no está guardada: todos aparecen <b>Presente</b>. Marca solo a los ausentes, o toca <b>Guardar lista</b> si vinieron todos.</div>` : '';
+  return dias + acciones + sinGuardar + (filas || '<div class="card"><p class="empty">No hay estudiantes en esta aula.</p></div>') +
     `<div class="as-resumen-dia">Hoy: ${cuenta.P} presentes · ${cuenta.T} tardías · ${cuenta.A} ausentes sin justificación · ${cuenta.J} ausentes justificados</div>`;
 }
 function asisSemanaHtml(grado, p){
@@ -5394,6 +5617,7 @@ const NAV_ITEMS = [
   {id:'estudiantes', label:'Estudiantes'},
   {id:'reportes', label:'Conducta'},
   {id:'asistencia', label:'Asistencia'},
+  {id:'horarios', label:'Horarios por grados'},
   {id:'hojas', label:'Hojas de tareas'},
   {id:'calificaciones', label:'Calificaciones'},
   {id:'tareas', label:'Registro y alertas de tareas'},
@@ -5408,7 +5632,7 @@ const NAV_ITEMS = [
   {id:'personalizar', label:'Personalizar'},
 ];
 function navAllowed(id){
-  if(id==='asistencia') return asisPuede();
+  if(id==='asistencia' || id==='horarios') return asisPuede();
   if(id==='bitacora') return canManageAcademicData(currentUser);
   if(id==='personalizar') return canManageAcademicData(currentUser) || puedePersonalizarMensajes(currentUser);
   if(id==='docentes') return canManageAcademicData(currentUser);
@@ -5517,6 +5741,7 @@ function renderViewInterno(){
     case 'boletas': return renderBoletas();
     case 'reportes': return renderReportes();
     case 'asistencia': return renderAsistencia();
+    case 'horarios': return renderHorarios();
     case 'averias': return renderAverias();
     case 'soporte': return renderSoporte();
     case 'mensajes': return renderMensajes();
