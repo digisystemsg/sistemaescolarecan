@@ -778,7 +778,7 @@ if('serviceWorker' in navigator){
    Cada entrega lleva un número de versión. Al abrir la plataforma (y cada cierto rato, o al volver a la
    pestaña) se compara con la versión publicada; si es distinta, aparece un aviso discreto abajo.
    Si es la misma, no pasa nada. Súbele el número cada vez que se publique una actualización. */
-const APP_VERSION = '2026-11-04-2230';
+const APP_VERSION = '2026-11-05-1300';
 let _avisoVersionMostrado = false, _ultimaRevisionVersion = 0;
 async function revisarVersionNueva(){
   if(_avisoVersionMostrado) return;
@@ -16536,7 +16536,9 @@ async function asisFotoOCR(cv, izq, filasY, paso, barras){
   const res = {textos: filasY.map(()=>''), cab: (barras||[]).map(()=>'')};
   try{
     await cargarScript('https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js');
-    const w = await Tesseract.createWorker('spa');
+    let w;
+    try{ w = await Tesseract.createWorker(); await w.loadLanguage('spa'); await w.initialize('spa'); }
+    catch(e1){ try{ if(w) await w.terminate(); }catch(e2){} w = await Tesseract.createWorker('spa'); }
     const E = 3, PAD = 30;
     const recorte = (x0,y0,x1,y1)=>{ const c2 = document.createElement('canvas'); const ww = Math.round((x1-x0)*E), hh = Math.round((y1-y0)*E);
       c2.width = ww+PAD*2; c2.height = hh+PAD*2; const g = c2.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0,0,c2.width,c2.height);
@@ -16604,7 +16606,8 @@ async function asisFotoLeer(file){
       return {semIdx: wi < ss.length ? wi : -1, cols: sg.rej.cols.map((x,i)=>({dow:i+1})), rows};
     });
     viewState.fotoEstado = '';
-    viewState.fotoRev = {grado, p, url, semanas};
+    const leyoNombres = ocr.textos.some(t=>asisFotoTokens(t).length);
+    viewState.fotoRev = {grado, p, url, semanas, sinNombres: (izq>=80 && !leyoNombres)};
     render();
   }catch(e){ viewState.fotoEstado = 'No pude leer esa imagen. Intenta de nuevo con otra foto o captura.'; viewState.fotoRev = null; render(); }
 }
@@ -16684,9 +16687,10 @@ function asisFotoHtml(grado, p){
       ${avisos.map(x=>`<div style="margin:0 0 10px;padding:10px 12px;background:#FFF8EA;border:1px dashed #E0B15A;border-radius:10px;font-size:13px;color:#7A5A12">${x}</div>`).join('')}
       <div class="table-wrap"><table class="as-tabla"><thead><tr><th style="width:34px">N°</th><th style="text-align:left">Estudiante</th>${th}</tr></thead><tbody>${filas}</tbody></table></div></div>`;
   }).join('');
+  const avisoNom = rev.sinNombres ? `<div style="margin:0 0 10px;padding:10px 12px;background:#FFF1EC;border:1px dashed #E5A98E;border-radius:10px;font-size:13px;color:#8A3B1E"><b>No pude leer los nombres de la foto</b>, así que asigné los estudiantes por orden de tu lista. Revisa fila por fila que cada marca sea del estudiante correcto (puedes cambiarlo en el selector).</div>` : '';
   return caja + `<div style="display:grid;grid-template-columns:minmax(0,230px) minmax(0,1fr);gap:16px;align-items:start">
     <div class="card"><div class="card-title">Tu foto</div><img src="${rev.url}" style="width:100%;border:1px solid #D7DFEE;border-radius:8px"></div>
-    <div><div class="card-title" style="margin:0 0 10px">Esto fue lo que leí</div>${bloques}
+    <div><div class="card-title" style="margin:0 0 10px">Esto fue lo que leí</div>${avisoNom}${bloques}
       <div class="nota-chica" style="margin:0 0 10px">Toca una marca para corregirla (vacío → presente → tardía → ausente → justificado). Las casillas sin marca no se guardan. Las ausencias quedan como <b>sin justificación</b>; el motivo de las justificadas lo eliges después en “Ausentes del día”.</div>
       <div class="btn-row"><button class="btn btn-primary" onclick="asisFotoGuardar()">Guardar ${rev.semanas.length>1?'estas semanas':'esta semana'}</button><button class="btn" onclick="asisFotoCancelar()">Cancelar</button></div>
     </div></div>`;
