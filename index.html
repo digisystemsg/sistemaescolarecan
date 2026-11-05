@@ -778,7 +778,7 @@ if('serviceWorker' in navigator){
    Cada entrega lleva un número de versión. Al abrir la plataforma (y cada cierto rato, o al volver a la
    pestaña) se compara con la versión publicada; si es distinta, aparece un aviso discreto abajo.
    Si es la misma, no pasa nada. Súbele el número cada vez que se publique una actualización. */
-const APP_VERSION = '2026-11-04-2130';
+const APP_VERSION = '2026-11-04-2230';
 let _avisoVersionMostrado = false, _ultimaRevisionVersion = 0;
 async function revisarVersionNueva(){
   if(_avisoVersionMostrado) return;
@@ -16446,7 +16446,7 @@ function asisFotoBlobs(cv){
   const w = cv.width, h = cv.height, d = cv.getContext('2d').getImageData(0,0,w,h).data;
   const cl = new Uint8Array(w*h);
   for(let i=0;i<w*h;i++){ cl[i] = asisFotoClase(d[i*4], d[i*4+1], d[i*4+2]); }
-  const vis = new Uint8Array(w*h), out = [], stack = new Int32Array(w*h);
+  const vis = new Uint8Array(w*h), out = [], barras = [], stack = new Int32Array(w*h);
   for(let s=0;s<w*h;s++){
     if(!cl[s] || vis[s]) continue;
     const c = cl[s]; let sp = 0; stack[sp++] = s; vis[s] = 1;
@@ -16460,9 +16460,10 @@ function asisFotoBlobs(cv){
       if(y<h-1 && !vis[p+w] && cl[p+w]===c){ vis[p+w]=1; stack[sp++]=p+w; }
     }
     const bw = x1-x0+1, bh = y1-y0+1;
+    if(c===1 && bw>=0.5*w && bh>=6 && bh<=60 && area>=0.5*bw*bh){ barras.push({x0,y0,x1,y1}); continue; }
     if(bw>=12 && bh>=7 && bw/bh>=1.2 && bw/bh<=16 && area>=0.3*bw*bh) out.push({c, x0, y0, x1, y1, cx:(x0+x1)/2, cy:(y0+y1)/2, w:bw, h:bh});
   }
-  return out;
+  return {blobs: out, barras};
 }
 function asisMediana(a){ const s = a.slice().sort((x,y)=>x-y); return s.length ? s[Math.floor(s.length/2)] : 0; }
 /* de los bloques de color saca columnas (días) y filas (estudiantes) */
@@ -16524,23 +16525,41 @@ function asisFotoAsignar(textos, ests){
     ests.forEach(e=>{ const sc = asisFotoPuntaje(rt, asisFotoTokens(asisNombre(e)+' '+nombresDe(e)+' '+apellidosDe(e))); if(sc>=0.45) pares.push({i, id:e.id, sc}); }); });
   pares.sort((a,b)=>b.sc-a.sc).forEach(p=>{ if(asig[p.i]===null && !usados[p.id]){ asig[p.i] = p.id; usados[p.id] = 1; } });
   const via = asig.map(a=>a?'nombre':'');
+  const porNombre = via.filter(Boolean).length;
   const libres = ests.filter(e=>!usados[e.id]); let k = 0;
+  /* si la foto trae nombres y la mayoría se encontró, lo que no se encontró se deja sin asignar (no se rellena por orden) */
+  if(porNombre >= Math.max(2, 0.5*asig.length)) return {asig, via};
   for(let i=0;i<asig.length;i++){ if(asig[i]===null && k<libres.length){ asig[i] = libres[k++].id; via[i] = 'orden'; } }
   return {asig, via};
 }
-async function asisFotoOCR(cv, izq, filasY){
+async function asisFotoOCR(cv, izq, filasY, paso, barras){
+  const res = {textos: filasY.map(()=>''), cab: (barras||[]).map(()=>'')};
   try{
-    if(izq < 80) return null;
-    const esc2 = 2, c2 = document.createElement('canvas'); c2.width = Math.round(izq*esc2); c2.height = cv.height*esc2;
-    const g = c2.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0,0,c2.width,c2.height); g.drawImage(cv, 0,0,izq,cv.height, 0,0,c2.width,c2.height);
     await cargarScript('https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js');
-    const r = await Tesseract.recognize(c2, 'spa');
-    const lineas = (r.data.lines || []).map(l=>({t:l.text, cy:(l.bbox.y0+l.bbox.y1)/2/esc2}));
-    const out = filasY.map(()=>'');
-    lineas.forEach(l=>{ let bi = -1, bd = 1e9; filasY.forEach((y,i)=>{ const dd = Math.abs(y-l.cy); if(dd<bd){ bd=dd; bi=i; } });
-      if(bi>=0 && bd < 14) out[bi] += ' ' + l.t; });
-    return out;
-  }catch(e){ return null; }
+    const w = await Tesseract.createWorker('spa');
+    const E = 3, PAD = 30;
+    const recorte = (x0,y0,x1,y1)=>{ const c2 = document.createElement('canvas'); const ww = Math.round((x1-x0)*E), hh = Math.round((y1-y0)*E);
+      c2.width = ww+PAD*2; c2.height = hh+PAD*2; const g = c2.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0,0,c2.width,c2.height);
+      g.imageSmoothingQuality = 'high'; g.drawImage(cv, x0,y0,x1-x0,y1-y0, PAD,PAD,ww,hh); return c2; };
+    if(izq >= 80){
+      try{ await w.setParameters({tessedit_pageseg_mode:'4'}); }catch(e){}
+      const r = await w.recognize(recorte(0,0,izq,cv.height));
+      const tol = Math.max(10, (paso||20)*0.6);
+      (r.data.lines || []).forEach(l=>{
+        const cy = ((l.bbox.y0+l.bbox.y1)/2 - PAD)/E; let bi = -1, bd = 1e9;
+        filasY.forEach((y,i)=>{ const dd = Math.abs(y-cy); if(dd<bd){ bd=dd; bi=i; } });
+        if(bi>=0 && bd < tol) res.textos[bi] += ' ' + l.t;
+      });
+    }
+    if(barras && barras.length){
+      try{ await w.setParameters({tessedit_pageseg_mode:'7'}); }catch(e){}
+      for(let i=0;i<barras.length;i++){
+        try{ const b = barras[i]; const r = await w.recognize(recorte(b.x0, Math.max(0,b.y0-1), b.x1, Math.min(cv.height,b.y1+1))); res.cab[i] = r.data.text || ''; }catch(e){}
+      }
+    }
+    try{ await w.terminate(); }catch(e){}
+  }catch(e){}
+  return res;
 }
 async function asisFotoLeer(file){
   if(!file) return;
@@ -16551,20 +16570,41 @@ async function asisFotoLeer(file){
     const esc1 = Math.min(1, 1500 / img.naturalWidth);
     const cv = document.createElement('canvas'); cv.width = Math.round(img.naturalWidth*esc1); cv.height = Math.round(img.naturalHeight*esc1);
     cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
-    const rej = asisFotoRejilla(asisFotoBlobs(cv));
-    if(!rej){ viewState.fotoEstado = 'No pude encontrar la tabla de colores. Prueba con una captura más clara y recta, que se vean las casillas de lunes a viernes.'; viewState.fotoRev = null; render(); return; }
+    const det = asisFotoBlobs(cv);
+    /* barras verdes anchas = encabezado de cada semana; separan una semana de otra */
+    let barras = det.barras.sort((a,b)=>a.y0-b.y0).filter((b,i,arr)=>!(i && b.y0 - arr[i-1].y1 < 5));
+    const starts = [0].concat(barras.map(b=>b.y1)), ends = barras.map(b=>b.y0).concat([cv.height]);
+    const segs = [];
+    starts.forEach((a,i)=>{
+      const sub = det.blobs.filter(b=>b.cy>a && b.cy<ends[i]);
+      const rej = asisFotoRejilla(sub);
+      if(rej) segs.push({rej, barra: i>0 ? barras[i-1] : null});
+    });
+    if(!segs.length){ viewState.fotoEstado = 'No pude encontrar la tabla de colores. Prueba con una captura más clara y recta, que se vean las casillas de lunes a viernes.'; viewState.fotoRev = null; render(); return; }
     const grado = asisGradoSel(), p = asisPeriodoSel();
     const ests = asisEstudiantes(grado, p);
-    let textos = await asisFotoOCR(cv, rej.izq, rej.rows);
-    const conTexto = !!(textos && textos.some(t=>asisFotoTokens(t).length));
-    if(!textos) textos = rej.rows.map(()=>'');
-    const as = asisFotoAsignar(textos, ests);
-    const ss = asisSemanas(p), sem = ss[asisSemanaSel(p)] || [];
+    const ss = asisSemanas(p), sel = asisSemanaSel(p);
+    const filasY = [].concat.apply([], segs.map(s=>s.rej.rows));
+    const izq = Math.min.apply(null, segs.map(s=>s.rej.izq));
+    const ocr = await asisFotoOCR(cv, izq, filasY, segs[0].rej.paso, segs.map(s=>s.barra).filter(Boolean));
+    let off = 0, ib = 0;
+    const semanas = segs.map((sg,k)=>{
+      const n = sg.rej.rows.length, textos = ocr.textos.slice(off, off+n); off += n;
+      const cab = sg.barra ? (ocr.cab[ib++] || '') : '';
+      const as = asisFotoAsignar(textos, ests);
+      let rows = sg.rej.mat.map((m,i)=>({estId: as.asig[i]||'', via: as.via[i]||'', txt: (textos[i]||'').trim(), m: m.map(c=>ASIS_FOTO_COD[c])}));
+      while(rows.length && !rows[rows.length-1].m.some(Boolean) && rows[rows.length-1].via!=='nombre') rows.pop();   // filas vacías de abajo
+      rows = rows.filter(r=>r.estId || r.m.some(Boolean));
+      /* semana: por la fecha del encabezado si se leyó; si no, seguidas desde la que está elegida */
+      let wi = sel + k; const mt = cab.match(/(\d{1,2})\s*[-–—]\s*\d{1,2}/);
+      if(mt){
+        const cand = []; ss.forEach((s,j)=>{ const lun = asisSumaDias(s[0], -(asisDiaSemana(s[0])-1)); if(Number(lun.slice(8))===Number(mt[1])) cand.push(j); });
+        if(cand.length) wi = cand.sort((a,b)=>Math.abs(a-(sel+k))-Math.abs(b-(sel+k)))[0];
+      }
+      return {semIdx: wi < ss.length ? wi : -1, cols: sg.rej.cols.map((x,i)=>({dow:i+1})), rows};
+    });
     viewState.fotoEstado = '';
-    viewState.fotoRev = {grado, p, semIdx: asisSemanaSel(p), url,
-      cols: rej.cols.map((x,i)=>({dow: i+1})),
-      rows: rej.mat.map((m,i)=>({estId: as.asig[i]||'', via: as.via[i]||'', txt: (textos[i]||'').trim(), m: m.map(c=>ASIS_FOTO_COD[c])})),
-      conTexto};
+    viewState.fotoRev = {grado, p, url, semanas};
     render();
   }catch(e){ viewState.fotoEstado = 'No pude leer esa imagen. Intenta de nuevo con otra foto o captura.'; viewState.fotoRev = null; render(); }
 }
@@ -16575,71 +16615,83 @@ document.addEventListener('paste', function(ev){
     for(let i=0;i<items.length;i++){ if(items[i].type && items[i].type.indexOf('image')===0){ ev.preventDefault(); asisFotoLeer(items[i].getAsFile()); return; } }
   }catch(e){}
 });
-function asisFotoFecha(dow){
-  const sem = (asisSemanas(asisPeriodoSel())[asisSemanaSel(asisPeriodoSel())] || []);
+function asisFotoFecha(dow, semIdx){
+  const sem = (asisSemanas(asisPeriodoSel())[semIdx] || []);
   return sem.find(d=>asisDiaSemana(d)===Number(dow)) || '';
 }
-function asisFotoCiclo(ri, ci){
-  const r = viewState.fotoRev && viewState.fotoRev.rows[ri]; if(!r) return;
+function asisFotoCiclo(wi, ri, ci){
+  const r = viewState.fotoRev && viewState.fotoRev.semanas[wi].rows[ri]; if(!r) return;
   r.m[ci] = ASIS_FOTO_COD[(ASIS_FOTO_COD.indexOf(r.m[ci]||'')+1) % ASIS_FOTO_COD.length]; render();
 }
-function asisFotoEst(ri, id){ const r = viewState.fotoRev.rows[ri]; r.estId = id; r.via = id ? 'manual' : ''; render(); }
-function asisFotoDia(ci, dow){ viewState.fotoRev.cols[ci].dow = Number(dow); render(); }
+function asisFotoEst(wi, ri, id){ const r = viewState.fotoRev.semanas[wi].rows[ri]; r.estId = id; r.via = id ? 'manual' : ''; render(); }
+function asisFotoDia(wi, ci, dow){ viewState.fotoRev.semanas[wi].cols[ci].dow = Number(dow); render(); }
+function asisFotoSem(wi, v){ viewState.fotoRev.semanas[wi].semIdx = Number(v); render(); }
 function asisFotoCancelar(){ viewState.fotoRev = null; viewState.fotoEstado = ''; render(); }
 function asisFotoGuardar(){
   const rev = viewState.fotoRev; if(!rev) return;
-  const vistos = {}, dup = [];
-  rev.rows.forEach(r=>{ if(!r.estId) return; if(vistos[r.estId]) dup.push(r.estId); vistos[r.estId] = 1; });
-  if(dup.length){ showToast('Hay un estudiante repetido en dos filas. Corrígelo antes de guardar.'); return; }
-  const diasUsados = {}; rev.cols.forEach(c=>{ diasUsados[c.dow] = (diasUsados[c.dow]||0)+1; });
-  if(Object.values(diasUsados).some(n=>n>1)){ showToast('Hay dos columnas con el mismo día. Corrígelo antes de guardar.'); return; }
+  const semUsadas = {};
+  for(let wi=0; wi<rev.semanas.length; wi++){
+    const S = rev.semanas[wi]; const tit = rev.semanas.length>1 ? ' (bloque '+(wi+1)+')' : '';
+    if(S.semIdx>=0){ if(semUsadas[S.semIdx]){ showToast('Dos bloques tienen la misma semana. Corrígelo antes de guardar.'); return; } semUsadas[S.semIdx] = 1; }
+    const vistos = {};
+    for(const r of S.rows){ if(!r.estId) continue; if(vistos[r.estId]){ showToast('Hay un estudiante repetido en dos filas'+tit+'. Corrígelo antes de guardar.'); return; } vistos[r.estId] = 1; }
+    const du = {}; for(const c of S.cols){ if(du[c.dow]){ showToast('Hay dos columnas con el mismo día'+tit+'. Corrígelo antes de guardar.'); return; } du[c.dow] = 1; }
+  }
   let dias = 0;
   commit(doc=>{
     const a = doc.asistencia = doc.asistencia || {}; a.reg = a.reg||{}; a.mot = a.mot||{}; a.libre = a.libre||{};
-    rev.cols.forEach((c,ci)=>{
-      const f = asisFotoFecha(c.dow);
-      if(!f || a.libre[f]) return;
-      if(!rev.rows.some(r=>r.estId && r.m[ci])) return;
-      const k = rev.grado+'|'+f; a.reg[k] = a.reg[k] || {};
-      rev.rows.forEach(r=>{ const m = r.m[ci]; if(!r.estId || !m) return; a.reg[k][r.estId] = m; if(m==='P'||m==='T') delete a.mot[k+'|'+r.estId]; });
-      dias++;
+    rev.semanas.forEach(S=>{
+      if(S.semIdx<0) return;
+      S.cols.forEach((c,ci)=>{
+        const f = asisFotoFecha(c.dow, S.semIdx);
+        if(!f || a.libre[f]) return;
+        if(!S.rows.some(r=>r.estId && r.m[ci])) return;
+        const k = rev.grado+'|'+f; a.reg[k] = a.reg[k] || {};
+        S.rows.forEach(r=>{ const m = r.m[ci]; if(!r.estId || !m) return; a.reg[k][r.estId] = m; if(m==='P'||m==='T') delete a.mot[k+'|'+r.estId]; });
+        dias++;
+      });
     });
   });
   viewState.fotoRev = null; viewState.fotoEstado = '';
-  showToast(dias ? 'Asistencia guardada: '+dias+' día'+(dias>1?'s':'')+'.' : 'No había días para guardar en esta semana.');
+  showToast(dias ? 'Asistencia guardada: '+dias+' día'+(dias>1?'s':'')+'.' : 'No había días para guardar.');
   setPref('asisTab','semana');
 }
 function asisFotoHtml(grado, p){
-  const rev = (viewState.fotoRev && viewState.fotoRev.grado===grado && viewState.fotoRev.p===p && viewState.fotoRev.semIdx===asisSemanaSel(p)) ? viewState.fotoRev : null;
-  const sem = (asisSemanas(p)[asisSemanaSel(p)] || []);
+  const rev = (viewState.fotoRev && viewState.fotoRev.grado===grado && viewState.fotoRev.p===p) ? viewState.fotoRev : null;
   const caja = `<div class="card"><div class="filters" style="margin-bottom:8px"><div class="field"><label>Foto o captura de tu hoja</label>
     <label class="btn btn-primary" style="cursor:pointer;display:inline-block">📷 Subir foto<input type="file" accept="image/*" style="display:none" onchange="asisFotoLeer(this.files[0]); this.value=''"></label></div></div>
-    <p class="nota-chica" style="margin:0">Elige la semana arriba y sube la captura de tu hoja (de lunes a viernes). También puedes copiar la captura y pegarla aquí con <b>Ctrl+V</b>. Los colores se leen solos: verde = presente, amarillo = tardía, rojo o rosado = ausente sin justificación, naranja = ausente justificado. Si la foto trae los nombres, los busca aunque no estén escritos exactamente igual; si no, usa el orden de tu lista.</p>
+    <p class="nota-chica" style="margin:0">Sube la captura de tu hoja, de una semana o de varias semanas seguidas (hasta 3 o más). También puedes copiarla y pegarla aquí con <b>Ctrl+V</b>. Los colores se leen solos: verde = presente, amarillo = tardía, rojo o rosado = ausente sin justificación, naranja = ausente justificado. Si la foto trae los nombres, los busca aunque no estén escritos exactamente igual; si no, usa el orden de tu lista. Si trae el encabezado de cada semana, también busca la fecha; si no, toma las semanas seguidas desde la que elegiste arriba.</p>
     ${viewState.fotoEstado ? `<p style="margin:10px 0 0;color:#7A5A12;background:#FFF8EA;border:1px dashed #E0B15A;border-radius:10px;padding:10px 12px">${esc(viewState.fotoEstado)}</p>` : ''}</div>`;
   if(!rev) return caja;
-  const ests = asisEstudiantes(grado, p);
-  const th = rev.cols.map((c,ci)=>`<th><select onchange="asisFotoDia(${ci}, this.value)">${[1,2,3,4,5].map(n=>`<option value="${n}" ${n===c.dow?'selected':''}>${ASIS_FOTO_DIAS[n]}${asisFotoFecha(n)?' '+asisFotoFecha(n).slice(8):''}</option>`).join('')}</select></th>`).join('');
-  const vistos = {}; rev.rows.forEach(r=>{ if(r.estId) vistos[r.estId] = (vistos[r.estId]||0)+1; });
-  const filas = rev.rows.map((r,ri)=>{
-    const chips = r.m.map((m,ci)=>`<td><button class="as-b ${m?'on as-'+m:''}" style="min-width:84px" onclick="asisFotoCiclo(${ri},${ci})">${m?ASIS_COD[m].replace('Ausente sin justificación','Ausente').replace('Ausente justificado','Justificado'):'—'}</button></td>`).join('');
-    const badge = r.via==='nombre' ? '<span class="nota-chica">por nombre</span>' : r.via==='orden' ? '<span class="nota-chica">por orden</span>' : '';
-    const rep = r.estId && vistos[r.estId]>1 ? ' style="border-color:#C0392B"' : '';
-    return `<tr><td>${ri+1}</td><td style="text-align:left"><select${rep} style="max-width:230px" onchange="asisFotoEst(${ri}, this.value)"><option value="">— no guardar esta fila —</option>${ests.map(e=>`<option value="${e.id}" ${e.id===r.estId?'selected':''}>${esc(asisNombre(e))}</option>`).join('')}</select> ${badge}${r.txt&&r.via!=='nombre'?`<div class="nota-chica">leí: ${esc(r.txt)}</div>`:''}</td>${chips}</tr>`;
+  const ests = asisEstudiantes(grado, p), ss = asisSemanas(p);
+  const bloques = rev.semanas.map((S,wi)=>{
+    const th = S.cols.map((c,ci)=>`<th><select onchange="asisFotoDia(${wi},${ci}, this.value)">${[1,2,3,4,5].map(n=>`<option value="${n}" ${n===c.dow?'selected':''}>${ASIS_FOTO_DIAS[n]}${asisFotoFecha(n,S.semIdx)?' '+asisFotoFecha(n,S.semIdx).slice(8):''}</option>`).join('')}</select></th>`).join('');
+    const vistos = {}; S.rows.forEach(r=>{ if(r.estId) vistos[r.estId] = (vistos[r.estId]||0)+1; });
+    const filas = S.rows.map((r,ri)=>{
+      const chips = r.m.map((m,ci)=>`<td><button class="as-b ${m?'on as-'+m:''}" style="min-width:84px" onclick="asisFotoCiclo(${wi},${ri},${ci})">${m?ASIS_COD[m].replace('Ausente sin justificación','Ausente').replace('Ausente justificado','Justificado'):'—'}</button></td>`).join('');
+      const badge = r.via==='nombre' ? '<span class="nota-chica">por nombre</span>' : r.via==='orden' ? '<span class="nota-chica">por orden</span>' : '';
+      const rep = r.estId && vistos[r.estId]>1 ? ' style="border-color:#C0392B"' : '';
+      return `<tr><td>${ri+1}</td><td style="text-align:left"><select${rep} style="max-width:230px" onchange="asisFotoEst(${wi},${ri}, this.value)"><option value="">— no guardar esta fila —</option>${ests.map(e=>`<option value="${e.id}" ${e.id===r.estId?'selected':''}>${esc(asisNombre(e))}</option>`).join('')}</select> ${badge}${r.txt&&r.via!=='nombre'?`<div class="nota-chica">leí: ${esc(r.txt)}</div>`:''}</td>${chips}</tr>`;
+    }).join('');
+    const avisos = [];
+    if(S.rows.length !== ests.length) avisos.push(`Leí <b>${S.rows.length}</b> filas y la lista del aula tiene <b>${ests.length}</b> estudiantes. Revisa que cada fila tenga el estudiante correcto.`);
+    if(S.cols.length !== 5) avisos.push(`Solo encontré <b>${S.cols.length}</b> columnas de días. Revisa el día de cada una arriba de la tabla.`);
+    const yaHay = S.semIdx>=0 ? S.cols.filter(c=>{ const f = asisFotoFecha(c.dow, S.semIdx); return f && asisDiaTieneLista(grado, f); }).length : 0;
+    if(yaHay) avisos.push(`En ${yaHay} de esos días ya había lista guardada; las marcas de la foto la reemplazan.`);
+    if(S.semIdx<0) avisos.push('Esta semana no está dentro del período elegido, no se guardará. Elige otra semana o cambia el período arriba.');
+    const opSem = `<option value="-1" ${S.semIdx<0?'selected':''}>— no guardar —</option>` + ss.map((s,k)=>`<option value="${k}" ${k===S.semIdx?'selected':''}>Semana ${k+1} · ${asisFechaCorta(s[0])} al ${asisFechaCorta(s[s.length-1])}</option>`).join('');
+    return `<div class="card"><div class="card-title" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">${rev.semanas.length>1?'Bloque '+(wi+1)+' · ':''}Semana: <select onchange="asisFotoSem(${wi}, this.value)">${opSem}</select></div>
+      ${avisos.map(x=>`<div style="margin:0 0 10px;padding:10px 12px;background:#FFF8EA;border:1px dashed #E0B15A;border-radius:10px;font-size:13px;color:#7A5A12">${x}</div>`).join('')}
+      <div class="table-wrap"><table class="as-tabla"><thead><tr><th style="width:34px">N°</th><th style="text-align:left">Estudiante</th>${th}</tr></thead><tbody>${filas}</tbody></table></div></div>`;
   }).join('');
-  const avisos = [];
-  if(rev.rows.length !== ests.length) avisos.push(`Leí <b>${rev.rows.length}</b> filas y la lista del aula tiene <b>${ests.length}</b> estudiantes. Revisa que cada fila tenga el estudiante correcto.`);
-  if(rev.cols.length !== 5) avisos.push(`Solo encontré <b>${rev.cols.length}</b> columnas de días. Revisa el día de cada una arriba de la tabla.`);
-  const yaHay = rev.cols.filter(c=>{ const f = asisFotoFecha(c.dow); return f && asisDiaTieneLista(grado, f); }).length;
-  if(yaHay) avisos.push(`En ${yaHay} de esos días ya había lista guardada; las marcas de la foto la reemplazan.`);
   return caja + `<div style="display:grid;grid-template-columns:minmax(0,230px) minmax(0,1fr);gap:16px;align-items:start">
     <div class="card"><div class="card-title">Tu foto</div><img src="${rev.url}" style="width:100%;border:1px solid #D7DFEE;border-radius:8px"></div>
-    <div class="card"><div class="card-title">Esto fue lo que leí</div>
-      ${avisos.map(x=>`<div style="margin:0 0 10px;padding:10px 12px;background:#FFF8EA;border:1px dashed #E0B15A;border-radius:10px;font-size:13px;color:#7A5A12">${x}</div>`).join('')}
-      <div class="table-wrap"><table class="as-tabla"><thead><tr><th style="width:34px">N°</th><th style="text-align:left">Estudiante</th>${th}</tr></thead><tbody>${filas}</tbody></table></div>
-      <div class="nota-chica" style="margin-top:10px">Toca una marca para corregirla (vacío → presente → tardía → ausente → justificado). Las casillas sin marca no se guardan. Las ausencias quedan como <b>sin justificación</b>; el motivo de las justificadas lo eliges después en “Ausentes del día”.</div>
-      <div class="btn-row" style="margin-top:12px"><button class="btn btn-primary" onclick="asisFotoGuardar()">Guardar esta semana</button><button class="btn" onclick="asisFotoCancelar()">Cancelar</button></div>
+    <div><div class="card-title" style="margin:0 0 10px">Esto fue lo que leí</div>${bloques}
+      <div class="nota-chica" style="margin:0 0 10px">Toca una marca para corregirla (vacío → presente → tardía → ausente → justificado). Las casillas sin marca no se guardan. Las ausencias quedan como <b>sin justificación</b>; el motivo de las justificadas lo eliges después en “Ausentes del día”.</div>
+      <div class="btn-row"><button class="btn btn-primary" onclick="asisFotoGuardar()">Guardar ${rev.semanas.length>1?'estas semanas':'esta semana'}</button><button class="btn" onclick="asisFotoCancelar()">Cancelar</button></div>
     </div></div>`;
 }
+
 </script>
 
 </body>
