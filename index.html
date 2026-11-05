@@ -778,7 +778,7 @@ if('serviceWorker' in navigator){
    Cada entrega lleva un número de versión. Al abrir la plataforma (y cada cierto rato, o al volver a la
    pestaña) se compara con la versión publicada; si es distinta, aparece un aviso discreto abajo.
    Si es la misma, no pasa nada. Súbele el número cada vez que se publique una actualización. */
-const APP_VERSION = '2026-11-04-2030';
+const APP_VERSION = '2026-11-04-2130';
 let _avisoVersionMostrado = false, _ultimaRevisionVersion = 0;
 async function revisarVersionNueva(){
   if(_avisoVersionMostrado) return;
@@ -4855,7 +4855,6 @@ function asisPrellenar(doc, grado, f){
 function asisMarcar(grado, f, estId, cod){
   commit(doc=>{
     const a = doc.asistencia = doc.asistencia || {}; a.reg = a.reg||{}; a.mot = a.mot||{}; a.libre = a.libre||{};
-    asisPrellenar(doc, grado, f);
     const k = grado+'|'+f; a.reg[k] = a.reg[k] || {};
     if(!cod || a.reg[k][estId]===cod){ delete a.reg[k][estId]; delete a.mot[k+'|'+estId]; }
     else { a.reg[k][estId] = cod; if(cod==='P'||cod==='T') delete a.mot[k+'|'+estId]; }
@@ -4865,11 +4864,10 @@ function asisMarcar(grado, f, estId, cod){
 }
 function asisCiclo(grado, f, estId){
   const sec = ['', 'P', 'T', 'A', 'J'];
-  const i = sec.indexOf(asisMarca(grado, f, estId) || 'P');
+  const i = sec.indexOf(asisMarca(grado, f, estId));
   const sig = sec[(i+1)%sec.length];
   commit(doc=>{
     const a = doc.asistencia = doc.asistencia || {}; a.reg = a.reg||{}; a.mot = a.mot||{}; a.libre = a.libre||{};
-    asisPrellenar(doc, grado, f);
     const k = grado+'|'+f; a.reg[k] = a.reg[k] || {};
     if(!sig){ delete a.reg[k][estId]; delete a.mot[k+'|'+estId]; } else { a.reg[k][estId] = sig; if(sig==='P'||sig==='T') delete a.mot[k+'|'+estId]; }
     if(Object.keys(a.reg[k]).length===0) delete a.reg[k];
@@ -5338,11 +5336,11 @@ function asisListaHtml(grado, p){
   const libre = asisDatos().libre[f];
   const dias = `<div class="as-sem"><span>Día:</span>${sem.map(d=>`<button class="btn btn-sm ${d===f?'btn-primary':''}" onclick="setPref('asisDia','${d}')">${asisNombreDia(d)} ${d.slice(8)}${asisEsLibre(d)?' ⛔':''}</button>`).join('')}</div>`;
   const acciones = `<div class="btn-row" style="margin:6px 0 10px;">
-    <button class="btn btn-primary" onclick="asisTodosPresentes('${esc(grado)}',${p},'${f}')">${asisDiaTieneLista(grado,f)?'✓ Todos presentes':'✓ Guardar lista (todos presentes)'}</button>
+    <button class="btn btn-primary" onclick="asisTodosPresentes('${esc(grado)}',${p},'${f}')">✓ Todos presentes</button>
     <button class="btn" onclick="asisAlternarLibre('${f}')">${libre?'Quitar día sin clase':'Día sin clase (feriado)'}</button></div>`;
   if(libre) return dias + acciones + `<div class="card"><p class="empty">${esc(asisNombreDia(f))} ${asisFechaCorta(f)} marcado sin clases: ${esc(libre)}. No cuenta en los días del período.</p></div>`;
   const filas = ests.map((e,i)=>{
-    const m = asisMarca(grado, f, e.id) || 'P';
+    const m = asisMarca(grado, f, e.id);
     const btns = ['P','T','A','J'].map(c=>`<button class="as-b ${m===c?'as-'+c+' on':''}" onclick="asisMarcar('${esc(grado)}','${f}','${e.id}','${c}')">${ASIS_COD[c]}</button>`).join('');
     let mot = '';
     if(m==='J'){
@@ -5352,9 +5350,8 @@ function asisListaHtml(grado, p){
     }
     return `<div class="as-r"><div class="as-top"><span>${i+1}. ${esc(asisNombre(e))}</span><span class="as-bs">${btns}</span></div>${mot}</div>`;
   }).join('');
-  const cuenta = {P:0,T:0,A:0,J:0}; ests.forEach(e=>{ const m = asisMarca(grado,f,e.id) || 'P'; cuenta[m]++; });
-  const sinGuardar = !asisDiaTieneLista(grado, f) ? `<div class="nota-chica" style="margin:0 0 10px;padding:10px 12px;border:1px dashed #E0B15A;background:#FFF8EA;border-radius:10px;color:#7A5A12">Esta lista todavía no está guardada: todos aparecen <b>Presente</b>. Marca solo a los ausentes, o toca <b>Guardar lista</b> si vinieron todos.</div>` : '';
-  return dias + acciones + sinGuardar + (filas || '<div class="card"><p class="empty">No hay estudiantes en esta aula.</p></div>') +
+  const cuenta = {P:0,T:0,A:0,J:0}; ests.forEach(e=>{ const m = asisMarca(grado,f,e.id); if(m) cuenta[m]++; });
+  return dias + acciones + (filas || '<div class="card"><p class="empty">No hay estudiantes en esta aula.</p></div>') +
     `<div class="as-resumen-dia">Hoy: ${cuenta.P} presentes · ${cuenta.T} tardías · ${cuenta.A} ausentes sin justificación · ${cuenta.J} ausentes justificados</div>`;
 }
 function asisSemanaHtml(grado, p){
@@ -16439,7 +16436,8 @@ function asisFotoClase(r,g,b){
   const mx = Math.max(r,g,b), mn = Math.min(r,g,b);
   if(mn>=215 && mx-mn<=10) return mn>=250 ? 0 : 5;
   if(r>=220 && g>=200 && g-b>=25 && r-g<=22) return 2;
-  if(r>=220 && r-g>=20 && r-b>=20 && g>=70) return 3;
+  if(r>=220 && g>=90 && g<=205 && b<=110 && g-b>=50) return 4;   // naranja = ausente justificado
+  if(r>=220 && r-g>=20 && r-b>=20) return 3;
   if(g>=140 && g-r>=14 && g-b>=8) return 1;
   if(b>=190 && b-r>=25 && b-g>=8) return 4;
   return 0;
@@ -16602,7 +16600,6 @@ function asisFotoGuardar(){
       const f = asisFotoFecha(c.dow);
       if(!f || a.libre[f]) return;
       if(!rev.rows.some(r=>r.estId && r.m[ci])) return;
-      asisPrellenar(doc, rev.grado, f);
       const k = rev.grado+'|'+f; a.reg[k] = a.reg[k] || {};
       rev.rows.forEach(r=>{ const m = r.m[ci]; if(!r.estId || !m) return; a.reg[k][r.estId] = m; if(m==='P'||m==='T') delete a.mot[k+'|'+r.estId]; });
       dias++;
@@ -16617,7 +16614,7 @@ function asisFotoHtml(grado, p){
   const sem = (asisSemanas(p)[asisSemanaSel(p)] || []);
   const caja = `<div class="card"><div class="filters" style="margin-bottom:8px"><div class="field"><label>Foto o captura de tu hoja</label>
     <label class="btn btn-primary" style="cursor:pointer;display:inline-block">📷 Subir foto<input type="file" accept="image/*" style="display:none" onchange="asisFotoLeer(this.files[0]); this.value=''"></label></div></div>
-    <p class="nota-chica" style="margin:0">Elige la semana arriba y sube la captura de tu hoja (de lunes a viernes). También puedes copiar la captura y pegarla aquí con <b>Ctrl+V</b>. Los colores se leen solos: verde = presente, amarillo = tardía, rojo = ausente sin justificación, azul claro = ausente justificado. Si la foto trae los nombres, los busca aunque no estén escritos exactamente igual; si no, usa el orden de tu lista.</p>
+    <p class="nota-chica" style="margin:0">Elige la semana arriba y sube la captura de tu hoja (de lunes a viernes). También puedes copiar la captura y pegarla aquí con <b>Ctrl+V</b>. Los colores se leen solos: verde = presente, amarillo = tardía, rojo o rosado = ausente sin justificación, naranja = ausente justificado. Si la foto trae los nombres, los busca aunque no estén escritos exactamente igual; si no, usa el orden de tu lista.</p>
     ${viewState.fotoEstado ? `<p style="margin:10px 0 0;color:#7A5A12;background:#FFF8EA;border:1px dashed #E0B15A;border-radius:10px;padding:10px 12px">${esc(viewState.fotoEstado)}</p>` : ''}</div>`;
   if(!rev) return caja;
   const ests = asisEstudiantes(grado, p);
