@@ -643,7 +643,7 @@
 
 /* logo en encabezado de paneles (solo computadora) */
 @media(min-width:761px){
- body:not(.en-inicio) .main .page-head{ position:relative; padding-right:130px; min-height:100px; background-image:var(--logo-url,none); background-repeat:no-repeat; background-position:right 0 top 2px; background-size:96px 96px; }
+ body:not(.en-inicio) .main .page-head{ position:relative; padding-right:130px; min-height:100px; background-image:var(--logo-url,none); background-color:#F8FAFE; background-blend-mode:multiply; background-repeat:no-repeat; background-position:right 0 top 2px; background-size:96px 96px; }
 }
 
 @media(max-width:760px){
@@ -778,7 +778,7 @@ if('serviceWorker' in navigator){
    Cada entrega lleva un número de versión. Al abrir la plataforma (y cada cierto rato, o al volver a la
    pestaña) se compara con la versión publicada; si es distinta, aparece un aviso discreto abajo.
    Si es la misma, no pasa nada. Súbele el número cada vez que se publique una actualización. */
-const APP_VERSION = '2026-11-05-1330';
+const APP_VERSION = '2026-11-09-1445';
 let _avisoVersionMostrado = false, _ultimaRevisionVersion = 0;
 async function revisarVersionNueva(){
   if(_avisoVersionMostrado) return;
@@ -821,9 +821,9 @@ setInterval(revisarVersionNueva, 15*60*1000);
    solo las novedades posteriores a la última versión que vio, y que le tocan según su rol. Se guarda por usuario en este navegador. */
 const NOVEDADES = [
   {v:'2026-11-02-1850', items:[
-    {t:'Ver como docente', x:'En el Panel principal hay una tarjeta para ver, como lo ven los docentes, los términos y condiciones, el cambio de contraseña, un aviso y la pantalla de mantenimiento. Es solo una vista previa: no guarda nada.', panel:'panel', target:'#vp_card', para:'direccion'},
+    {t:'Ver como docente', x:'En el Panel principal hay una tarjeta para ver, como lo ven los docentes, los términos y condiciones, el cambio de contraseña, un aviso y la pantalla de mantenimiento. Es solo una vista previa: no guarda nada.', panel:'panel', target:'#vp_card', para:'mantenimiento'},
     {t:'Contraseña propia', x:'Si tu contraseña era la que se entrega al inicio, al entrar te pedimos crear una propia, con mínimo 6 caracteres: números, mayúscula, minúscula y un carácter especial.', panel:'panel', target:'#mi_clave_card', para:'todos'},
-    {t:'Pausar la plataforma', x:'En el Panel principal puedes pausar la plataforma para todos, menos para Dirección y Mantenimiento, mientras haces cambios. Escribe un mensaje, toca "Pausar para todos" y, cuando termines, "Reanudar".', panel:'panel', target:'#pausa_card', para:'direccion'},
+    {t:'Pausar la plataforma', x:'En el Panel principal puedes pausar la plataforma para todos, menos para Dirección y Mantenimiento, mientras haces cambios. Escribe un mensaje, toca "Pausar para todos" y, cuando termines, "Reanudar".', panel:'panel', target:'#pausa_card', para:'mantenimiento'},
     {t:'Avisos momentáneos', x:'En el Panel principal puedes escribir un aviso corto y mandarlo a las personas que estén conectadas en ese momento. Verás la lista de quién está conectado y marcas a una, a varias o a todas. Les aparece en una ventana y desaparece cuando lo leen o a los 10 minutos.', panel:'panel', target:'#av_card', para:'admin'}
   ]},
   {v:'2026-11-02-1340', items:[
@@ -839,7 +839,7 @@ const NOVEDADES = [
     {t:'Aviso de versión nueva', x:'Cuando haya una versión nueva te saldrá un aviso pequeño abajo a la derecha. Toca "Actualizar" para verla. Este recorrido lo abres otra vez con el botón "✨ Novedades" del menú.', panel:null, target:'#btn_novedades', abrirMenu:true, para:'todos'}
   ]}
 ];
-function novOk(i,u){ return i.para==='todos' || (i.para==='admin' && isAdmin(u)) || (i.para==='direccion' && exentoPausa(u)) || (i.para==='orientador' && gradosBoleta(u).length>0) || (i.para==='gestion' && puedeGestionarEstudiantes(u)) || (i.para==='vista' && puedeCambiarVista(u)); }
+function novOk(i,u){ return i.para==='todos' || (i.para==='admin' && isAdmin(u)) || (i.para==='mantenimiento' && puedeCambiarVista(u) && !propEnVistaDocente(u)) || (i.para==='orientador' && gradosBoleta(u).length>0) || (i.para==='gestion' && puedeGestionarEstudiantes(u)) || (i.para==='vista' && puedeCambiarVista(u)); }
 let _novedadesRevisadas = false, _novUsuario = null, NOV = null;
 function novedadesParaMi(){
   const u = currentUser; if(!u || sesionEstudiante) return [];
@@ -916,7 +916,7 @@ function dibujarNovedades(){
       '<button type="button" style="border:0; background:none; color:#6b7280; cursor:pointer; font-size:12.5px;" onclick="cerrarNovedades()">Salir</button>' +
       '<span style="display:flex; gap:6px;">' +
         (i>0 ? '<button type="button" style="'+btn+'" onclick="novPaso('+(i-1)+')">←</button>' : '') +
-        (i<n-1 ? '<button type="button" style="'+btnP+'" onclick="novPaso('+(i+1)+')">Siguiente</button>' : '<button type="button" style="'+btnP+'" onclick="cerrarNovedades()">Listo</button>') +
+        (i<n-1 ? '<button type="button" style="'+btnP+'" onclick="novPaso('+(i+1)+')">Siguiente</button>' : '<button type="button" style="'+btnP+'" onclick="cerrarNovedades(true)">Listo</button>') +
       '</span></div>';
   novColocar();
   if(!window._novTimer) window._novTimer = setInterval(novColocar, 500);
@@ -1031,7 +1031,52 @@ function novDetener(){
   showToast('Listo: el recorrido no volverá a aparecer hasta la próxima actualización.');
   cerrarNovedades();
 }
-function cerrarNovedades(){ if(NOV){ marcarNovedadesVistas(); } NOV = null; try{ document.body.classList.remove('menu-m'); }catch(e){} dibujarNovedades(); }
+function cerrarNovedades(listo){
+  if(NOV){
+    marcarNovedadesVistas();
+    /* si salió antes de terminar, se guarda lo que le faltó ver; si es un repaso, no se toca */
+    if(!NOV.replay) novGuardarPend(listo===true ? [] : NOV.lista.slice(NOV.i+1).map(x=>x.t));
+  }
+  NOV = null; try{ document.body.classList.remove('menu-m'); }catch(e){} dibujarNovedades();
+}
+function novGuardarPend(titulos){
+  const u = currentUser; if(!u) return;
+  try{ localStorage.setItem('ecan_nov_pend_'+u.id, JSON.stringify(titulos)); }catch(e){}
+  guardarVistoEnDocente({novPend: titulos});
+}
+/* Novedades que la persona no alcanzó a ver (salió a la mitad del recorrido) */
+function novPendientes(){
+  const u = currentUser; if(!u) return [];
+  let t = null;
+  try{ const g = localStorage.getItem('ecan_nov_pend_'+u.id); if(g!==null) t = JSON.parse(g); }catch(e){}
+  if(!Array.isArray(t)) t = Array.isArray(u.novPend) ? u.novPend : [];
+  const todas = NOVEDADES.reduce((a,n)=>a.concat(n.items),[]);
+  return t.map(x=>todas.find(i=>i.t===x)).filter(i=>i && novOk(i,u));
+}
+/* Botón "✨ Novedades" del menú */
+function abrirNovedadesMenu(){
+  if(!currentUser) return;
+  const lista = [];
+  novPendientes().concat(novedadesParaMi()).forEach(i=>{ if(!lista.includes(i)) lista.push(i); });
+  if(lista.length){ abrirNovedades(lista, false); return; }
+  novSinNada();
+}
+function novSinNada(){
+  try{ document.body.classList.remove('menu-m'); }catch(e){}
+  let d = document.getElementById('nov_nada'); if(d) d.remove();
+  d = document.createElement('div'); d.id = 'nov_nada';
+  d.style.cssText = 'position:fixed; inset:0; z-index:10002; background:rgba(8,20,50,.35); display:flex; align-items:center; justify-content:center; padding:16px;';
+  d.innerHTML = '<div style="background:#fff; color:#222; border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,.28); border:1px solid #cfd6e4; width:min(380px,100%); padding:22px; text-align:center;">' +
+    '<div style="font-size:30px;">✨</div><h3 style="margin:6px 0 6px; font-size:18px;">No hay nada nuevo para mostrar</h3>' +
+    '<p style="margin:0 0 16px; font-size:14px; color:#556178;">Ya viste todas las novedades.</p>' +
+    '<div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;"><button type="button" class="btn btn-sm" onclick="document.getElementById(\'nov_nada\').remove()">Cerrar</button>' +
+    '<button type="button" class="btn btn-sm btn-primary" onclick="novRepetir()">Volver a ver el recorrido</button></div></div>';
+  document.body.appendChild(d);
+}
+function novRepetir(){
+  const d = document.getElementById('nov_nada'); if(d) d.remove();
+  abrirNovedades(undefined, false); if(NOV) NOV.replay = true;
+}
 function appYaInstalada(){
   try{ return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; }
   catch(e){ return false; }
@@ -5307,12 +5352,13 @@ function renderAsistencia(){
     <p class="page-desc">Se marca por día y se cuenta por semana y por período. Presente, tardía y ausente justificado cuentan como asistencia; solo el ausente sin justificación es inasistencia.</p></div>`;
   if(!grados.length) return head + `<div class="card"><p class="empty">Todavía no hay grados creados.</p></div>`;
   const grado = asisGradoSel(), p = asisPeriodoSel();
-  const tab = ['lista','semana','resumen','ausentes','pendientes','retiros','foto'].includes(getPref('asisTab','lista')) ? getPref('asisTab','lista') : 'lista';
+  const tab = ['lista','semana','resumen','ausentes','pendientes','retiros','foto','clases'].includes(getPref('asisTab','lista')) ? getPref('asisTab','lista') : 'lista';
   const tabs = `<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
-    ${[['lista','Pase de lista'],['semana','Semana'],['resumen','Resumen del período'],['ausentes','Ausentes del día'],['pendientes','Fechas pendientes'],['retiros','Retiros temprano'],['foto','Subir foto de la semana']].map(([k,t])=>`<button class="btn ${tab===k?'btn-primary':''}" onclick="setPref('asisTab','${k}')">${t}</button>`).join('')}</div>`;
+    ${[['lista','Pase de lista'],['semana','Semana'],['resumen','Resumen del período'],['ausentes','Ausentes del día'],['pendientes','Fechas pendientes'],['retiros','Retiros temprano'],['foto','Subir foto de la semana'],['clases','Clases perdidas']].map(([k,t])=>`<button class="btn ${tab===k?'btn-primary':''}" onclick="setPref('asisTab','${k}')">${t}</button>`).join('')}</div>`;
   if(tab==='ausentes') return head + tabs + asisAusentesHtml();
   if(tab==='pendientes') return head + tabs + asisPendientesHtml();
   if(tab==='retiros') return head + tabs + asisRetirosHtml();
+  if(tab==='clases') return head + tabs + asisClasesHtml();
   const filtros = `<div class="filters">
     <div class="field"><label>Aula</label><select onchange="setPref('asisGrado',this.value)">${grados.map(g=>`<option ${g===grado?'selected':''}>${esc(g)}</option>`).join('')}</select></div>
     <div class="field"><label>Período</label><select onchange="setPref('asisPer',this.value)">${[1,2,3,4].map(n=>`<option value="${n}" ${n===p?'selected':''}>Período ${n}</option>`).join('')}</select></div></div>`;
@@ -5706,7 +5752,7 @@ function renderLayout(){
         </div>` : ''}
         <p class="user-name" style="margin:0;">${esc(propEnVistaDocente(currentUser)?nombreDocenteVista(currentUser):currentUser.nombre)}</p>
         <p class="user-role" style="margin:0 0 10px;">${esc(domainLabel(currentUser))}</p>
-        <button class="btn btn-sm" id="btn_novedades" style="width:100%; margin-bottom:6px;" onclick="abrirNovedades()">✨ Novedades</button>
+        <button class="btn btn-sm" id="btn_novedades" style="width:100%; margin-bottom:6px;" onclick="abrirNovedadesMenu()">✨ Novedades</button>
         ${puedeCambiarVista(currentUser)?`<button class="btn btn-sm" id="btn_broma" style="width:100%; margin-bottom:6px;" onclick="iniciarBroma()">🎬 Iniciar</button>`:''}
         <button class="logout-btn" onclick="doLogout()">Cambiar de usuario</button>
         <button class="btn btn-sm" style="width:100%; margin-top:6px; background:none; border:none; color:#DCE6F6; font-size:13px;" onclick="toggleSidebarFooter()">Ocultar ▲</button>
@@ -16698,6 +16744,170 @@ function asisFotoHtml(grado, p){
     </div></div>`;
 }
 
+</script>
+
+<script>
+/* ---------- Asistencia: Clases perdidas (vinculado al horario por grado) ---------- */
+const CP_COL = {A:['#FBE5DC','#B5552B','#E5A98E'], J:['#E1E9F8','#2F4F9A','#9EB3E3'], R:['#FFF1D2','#9A6A00','#E7C66F'], N:['#F3F5F9','#6B7589','#E1E6F0'], P:['#E5F3E9','#1F6B3A','#9CCBA8']};
+const CP_BLOQUE = 40;   // minutos que equivalen a 1 hora clase
+function cpChip(t, k, extra){ const c = CP_COL[k] || CP_COL.N; return `<span ${extra||''} style="display:inline-block;margin:2px 4px 2px 0;padding:3px 9px;border-radius:999px;background:${c[0]};color:${c[1]};border:1px solid ${c[2]};font-size:12px;font-weight:600;white-space:nowrap">${t}</span>`; }
+function cpFmt(min){ min = Math.round(min); if(min<=0) return '—'; const h = Math.floor(min/CP_BLOQUE), r = min%CP_BLOQUE; return (h?h+' h clase':'')+(h&&r?' + ':'')+(r?r+' min':''); }
+function cpFmtCorto(min){ min = Math.round(min); if(min<=0) return '0 h'; const h = Math.floor(min/CP_BLOQUE), r = min%CP_BLOQUE; return (h?h+' h':'')+(h&&r?' y ':'')+(r?r+' min':''); }
+function cpMesTxt(ym){ const m = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']; const [a,b] = ym.split('-'); return m[Number(b)-1]+' '+a; }
+function cpUltDia(ym){ const [a,b] = ym.split('-').map(Number); return new Date(Date.UTC(a,b,0)).toISOString().slice(0,10); }
+function cpGrado(){ const gs = DB.config.grados || []; return (viewState.cpGrado && gs.includes(viewState.cpGrado)) ? viewState.cpGrado : asisGradoSel(); }
+function cpModo(){ return ['dia','semana','mes','periodo','fechas'].includes(viewState.cpModo) ? viewState.cpModo : 'mes'; }
+function cpRango(){
+  const m = cpModo(), hoy = asisHoyLocal(), f = viewState.cpFecha || hoy;
+  if(m==='dia') return {ini:f, fin:f, tit:asisFechaLarga(f)};
+  if(m==='semana'){ let l = f; while(asisDiaSemana(l)!==1) l = asisSumaDias(l,-1); return {ini:l, fin:asisSumaDias(l,4), tit:'semana del '+asisFechaCorta(l)+' al '+asisFechaCorta(asisSumaDias(l,4))}; }
+  if(m==='mes'){ const ym = viewState.cpMes || hoy.slice(0,7); return {ini:ym+'-01', fin:cpUltDia(ym), tit:cpMesTxt(ym)}; }
+  if(m==='periodo'){ const p = Number(viewState.cpPer)||asisPeriodoDe(hoy)||asisPeriodoSel(); const r = asisRango(p); return r ? {ini:r.ini, fin:r.fin, tit:'período '+p} : {ini:hoy, fin:hoy, tit:'período '+p+' (sin fechas)', sinPer:true}; }
+  let a = viewState.cpDesde || hoy.slice(0,8)+'01', b = viewState.cpHasta || hoy; if(b<a){ const t=a; a=b; b=t; }
+  return {ini:a, fin:b, tit:'del '+asisFechaCorta(a)+' al '+asisFechaCorta(b)};
+}
+/* lo que perdió un estudiante entre dos fechas, por materia (en minutos; 1 hora clase = 40) */
+function cpCalcular(grado, estId, ini, fin){
+  const mats = {}, orden = [], dias = [];
+  const res = {mats, orden, diasA:[], diasJ:[], diasR:[], sinHorario:0, sinLista:0, prog:0, perdio:0, diasContados:0};
+  const get = (nom, ma)=>{ if(!mats[nom]){ mats[nom] = {materia:nom, maestra:ma||'', prog:0, perdio:0, dias:[]}; orden.push(nom); } if(ma) mats[nom].maestra = ma; return mats[nom]; };
+  const marca = asisDatos().reg;
+  for(let f = ini, n = 0; f <= fin && n < 400; f = asisSumaDias(f,1), n++){
+    const dw = asisDiaSemana(f); if(dw<1 || dw>5 || asisEsLibre(f)) continue;
+    const m = asisMarca(grado, f, estId), lista = asisDiaTieneLista(grado, f);
+    const ret = asisRetirosDe(f).filter(r=>r.grado===grado && r.estId===estId)[0];
+    if(!lista && !ret) { res.sinLista++; continue; }
+    const bl = asisHorarioDia(grado, f);
+    const ausente = (m==='A' || m==='J');
+    if(ausente) (m==='A' ? res.diasA : res.diasJ).push(f); else if(ret) res.diasR.push(f);
+    if(!bl){ res.sinHorario++; continue; }
+    res.diasContados++;
+    bl.forEach(b=>{ if(b.tipo && b.tipo!=='clase') return; const x = get(b.materia||'Clase', b.maestra); x.prog += CP_BLOQUE; res.prog += CP_BLOQUE; });
+    if(ausente){
+      const vistas = {};
+      bl.forEach(b=>{ if(b.tipo && b.tipo!=='clase') return; const x = get(b.materia||'Clase', b.maestra); x.perdio += CP_BLOQUE; res.perdio += CP_BLOQUE; if(!vistas[x.materia]){ vistas[x.materia]=1; x.dias.push([f,m]); } });
+    } else if(ret){
+      const pz = Array.isArray(ret.pierde) ? ret.pierde : asisPierde(grado, f, ret.hora);
+      (pz||[]).forEach(q=>{ const x = get(q.materia||'Clase', q.maestra); const mi = (q.horas||0)*CP_BLOQUE + (q.min||0); x.perdio += mi; res.perdio += mi; x.dias.push([f,'R']); });
+    }
+  }
+  return res;
+}
+function cpEstSel(ests){ return ests.find(e=>e.id===viewState.cpEst) ? viewState.cpEst : ''; }
+function cpSet(k, v){ viewState[k] = v; render(); }
+function cpModoSet(m){ viewState.cpModo = m; render(); }
+function cpMover(d){
+  const m = cpModo();
+  if(m==='mes'){ const ym = viewState.cpMes || asisHoyLocal().slice(0,7); const [a,b] = ym.split('-').map(Number); const t = new Date(Date.UTC(a, b-1+d, 1)); viewState.cpMes = t.toISOString().slice(0,7); }
+  else if(m==='semana'){ viewState.cpFecha = asisSumaDias(viewState.cpFecha || asisHoyLocal(), 7*d); }
+  else if(m==='dia'){ let f = asisSumaDias(viewState.cpFecha || asisHoyLocal(), d); while([0,6].includes(asisDiaSemana(f))) f = asisSumaDias(f, d); viewState.cpFecha = f; }
+  render();
+}
+function cpIrDia(f, estId){ viewState.cpModo = 'dia'; viewState.cpFecha = f; if(estId!==undefined) viewState.cpEst = estId; render(); }
+function cpVerEst(id){ viewState.cpEst = id; render(); }
+function cpKpi(v, t, sub, k){ const c = CP_COL[k]; return `<div style="flex:1;min-width:170px;background:#fff;border:1px solid #E0E6F0;border-left:4px solid ${c[2]};border-radius:14px;padding:14px 16px"><div style="font-size:12px;color:#6B7589;font-weight:600;text-transform:uppercase;letter-spacing:.05em">${t}</div><div style="font-size:26px;font-weight:700;color:#14213D;line-height:1.2;white-space:nowrap">${v}</div><div style="font-size:12.5px;color:#6B7589">${sub}</div></div>`; }
+function cpBarra(p){ return `<div style="display:flex;align-items:center;gap:8px"><div style="width:70px;height:8px;border-radius:6px;background:#EEF2FA;overflow:hidden"><div style="width:${p}%;height:100%;background:#8CC7A0"></div></div><b style="font-size:12.5px;color:#1F6B3A">${p}%</b></div>`; }
+function cpSeg(){
+  const m = cpModo();
+  return `<div style="display:inline-flex;background:#EEF2FA;border:1px solid #D7DFEE;border-radius:12px;padding:3px;gap:2px;flex-wrap:wrap">${[['dia','Día'],['semana','Semana'],['mes','Mes'],['periodo','Período'],['fechas','Fechas']].map(([k,t])=>`<button onclick="cpModoSet('${k}')" style="border:0;cursor:pointer;padding:7px 14px;border-radius:9px;font-size:13px;font-weight:600;font-family:inherit;${k===m?'background:#fff;color:#12306E;box-shadow:0 1px 4px rgba(18,48,110,.15)':'background:transparent;color:#6B7589'}">${t}</button>`).join('')}</div>`;
+}
+function cpControlFecha(){
+  const m = cpModo(), hoy = asisHoyLocal();
+  const flechas = (m==='dia'||m==='semana'||m==='mes') ? `<button class="btn btn-sm" onclick="cpMover(-1)">◀</button> ` : '';
+  const sig = (m==='dia'||m==='semana'||m==='mes') ? ` <button class="btn btn-sm" onclick="cpMover(1)">▶</button>` : '';
+  if(m==='dia' || m==='semana') return `<div class="field"><label>${m==='dia'?'Fecha':'Una fecha de la semana'}</label><div style="display:flex;gap:4px;align-items:center">${flechas}<input type="date" value="${viewState.cpFecha||hoy}" onchange="cpSet('cpFecha', this.value||'${hoy}')">${sig}</div></div>`;
+  if(m==='mes') return `<div class="field"><label>Mes</label><div style="display:flex;gap:4px;align-items:center">${flechas}<input type="month" value="${viewState.cpMes||hoy.slice(0,7)}" onchange="cpSet('cpMes', this.value||'${hoy.slice(0,7)}')">${sig}</div></div>`;
+  if(m==='periodo'){ const p = Number(viewState.cpPer)||asisPeriodoDe(hoy)||asisPeriodoSel(); return `<div class="field"><label>Período</label><select onchange="cpSet('cpPer', this.value)">${[1,2,3,4].map(n=>`<option value="${n}" ${n===p?'selected':''}>Período ${n}</option>`).join('')}</select></div>`; }
+  return `<div class="field"><label>Desde</label><input type="date" value="${viewState.cpDesde||hoy.slice(0,8)+'01'}" onchange="cpSet('cpDesde', this.value)"></div><div class="field"><label>Hasta</label><input type="date" value="${viewState.cpHasta||hoy}" onchange="cpSet('cpHasta', this.value)"></div>`;
+}
+const CP_LEYENDA = `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">${cpChip('Ausente sin justificación','A')}${cpChip('Ausente justificado','J')}${cpChip('Retiro temprano','R')}</div>`;
+function cpAvisos(res, rg){
+  const a = [];
+  if(res.sinHorario) a.push(`En ${res.sinHorario} día(s) no hay horario cargado para este grado (panel "Horarios por grados"); esos días no se cuentan.`);
+  if(res.sinLista) a.push(`En ${res.sinLista} día(s) de clase todavía no se tomó la lista; esos días no se cuentan.`);
+  return a.map(x=>`<div style="margin:10px 0 0;padding:10px 12px;background:#FFF8EA;border:1px dashed #E0B15A;border-radius:10px;font-size:13px;color:#7A5A12">${x}</div>`).join('');
+}
+function asisClasesHtml(){
+  const gs = DB.config.grados || [], grado = cpGrado(), rg = cpRango();
+  const p = asisPeriodoDe(rg.ini) || asisPeriodoSel();
+  const ests = asisEstudiantes(grado, p), estId = cpEstSel(ests);
+  const filtros = `<div class="card"><div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap">
+    <div class="field"><label>Aula</label><select onchange="viewState.cpEst=''; cpSet('cpGrado', this.value)">${gs.map(g=>`<option ${g===grado?'selected':''}>${esc(g)}</option>`).join('')}</select></div>
+    <div class="field"><label>Estudiante</label><select style="min-width:230px" onchange="cpSet('cpEst', this.value)"><option value="">Todo el grado</option>${ests.map(e=>`<option value="${e.id}" ${e.id===estId?'selected':''}>${esc(asisNombre(e))}</option>`).join('')}</select></div>
+    <div class="field"><label>Ver por</label>${cpSeg()}</div>${cpControlFecha()}</div></div>`;
+  if(rg.sinPer) return filtros + `<div class="card"><p class="empty">Dirección todavía no configuró las fechas de este período.</p></div>`;
+  if(!asisVersiones(grado).length) return filtros + `<div class="card"><p class="empty">Este grado todavía no tiene horario. Cárgalo en “Horarios por grados” y aquí aparecerán las clases recibidas y perdidas.</p></div>`;
+  return filtros + (estId ? cpEstudianteHtml(grado, estId, ests, rg) : cpGradoHtml(grado, ests, rg));
+}
+function cpEstudianteHtml(grado, estId, ests, rg){
+  const e = ests.find(x=>x.id===estId), res = cpCalcular(grado, estId, rg.ini, rg.fin);
+  const rec = res.prog - res.perdio, pct = res.prog ? Math.round(rec*100/res.prog) : 0;
+  const kp = `<div style="display:flex;gap:12px;flex-wrap:wrap;margin:0 0 14px">
+    ${cpKpi(cpFmtCorto(res.prog),'Debió recibir', esc(rg.tit)+', según el horario','N')}
+    ${cpKpi(cpFmtCorto(rec),'Recibió', res.prog?'de sus clases ('+pct+'%)':'sin clases contadas','P')}
+    ${cpKpi(cpFmtCorto(res.perdio),'Perdió','por ausencias y retiros','A')}
+    ${cpKpi(res.diasA.length+res.diasJ.length+' día'+((res.diasA.length+res.diasJ.length)===1?'':'s'),'Ausente', res.diasA.length+' sin justificar · '+res.diasJ.length+' justificado'+(res.diasJ.length===1?'':'s')+(res.diasR.length?' · '+res.diasR.length+' retiro'+(res.diasR.length===1?'':'s'):''),'J')}</div>`;
+  if(cpModo()==='dia') return kp + cpDiaHtml(grado, estId, rg.ini, res) + cpAvisos(res, rg);
+  const filas = res.orden.map(n=>{ const x = res.mats[n], r = x.prog - x.perdio;
+    const ch = x.dias.map(([f,k])=>cpChip(asisNombreDia(f)+' '+Number(f.slice(8)), k==='R'?'R':k, `onclick="cpIrDia('${f}')" title="Ver ese día" `+'class="cp-ch"').replace('style="','style="cursor:pointer;')).join('');
+    return `<tr><td style="text-align:left;font-weight:600">${esc(x.materia)}${x.maestra?`<div style="font-weight:400;color:#6B7589;font-size:12px">${esc(x.maestra)}</div>`:''}</td><td style="text-align:left">${cpFmt(x.prog)}</td><td style="text-align:left;color:#B5552B"><b>${cpFmt(x.perdio)}</b></td><td style="text-align:left;color:#1F6B3A"><b>${cpFmt(r)}</b></td><td style="text-align:left">${x.prog?cpBarra(Math.round(r*100/x.prog)):''}</td><td style="text-align:left">${ch}</td></tr>`; }).join('');
+  return kp + `<div class="card" id="cp_print"><div class="card-title">Clases recibidas y perdidas por materia · ${esc(asisNombre(e))} · ${esc(rg.tit)}</div>
+    ${filas ? `<div class="table-wrap"><table class="as-tabla"><thead><tr><th style="text-align:left">Materia</th><th style="text-align:left">Debió recibir</th><th style="text-align:left">Perdió</th><th style="text-align:left">Recibió</th><th style="text-align:left">Asistió</th><th style="text-align:left">Días en que perdió clase</th></tr></thead><tbody>${filas}
+    <tr style="background:#F6F8FC"><td style="text-align:left;font-weight:700">Total</td><td style="text-align:left"><b>${cpFmt(res.prog)}</b></td><td style="text-align:left;color:#B5552B"><b>${cpFmt(res.perdio)}</b></td><td style="text-align:left;color:#1F6B3A"><b>${cpFmt(rec)}</b></td><td style="text-align:left">${res.prog?cpBarra(pct):''}</td><td></td></tr></tbody></table></div>` : `<p class="empty">No hay clases contadas en este rango (revisa que haya listas tomadas y horario cargado).</p>`}
+    ${CP_LEYENDA}<p class="nota-chica" style="margin:10px 0 0">Se calcula con el horario del grado que estaba vigente cada día. Solo cuentan los días con lista tomada. Un bloque completo cuenta como 1 hora clase; en los retiros se cuentan los minutos que faltaron. Toca un día para ver el detalle.</p>
+    ${cpAvisos(res, rg)}<div class="btn-row" style="margin-top:12px"><button class="btn" onclick="cpImprimir()">🖨 Imprimir</button></div></div>`;
+}
+function cpDiaHtml(grado, estId, f, res){
+  const m = asisMarca(grado, f, estId), lista = asisDiaTieneLista(grado, f);
+  const ret = asisRetirosDe(f).filter(r=>r.grado===grado && r.estId===estId)[0];
+  const bl = asisHorarioDia(grado, f);
+  const dw = asisDiaSemana(f);
+  if(dw<1||dw>5) return `<div class="card"><p class="empty">Ese día es fin de semana.</p></div>`;
+  if(asisEsLibre(f)) return `<div class="card"><p class="empty">Ese día se marcó sin clases: ${esc(asisDatos().libre[f])}.</p></div>`;
+  if(!lista && !ret) return `<div class="card"><p class="empty">Ese día todavía no se tomó la lista.</p></div>`;
+  if(!bl) return `<div class="card"><p class="empty">No hay horario cargado para este grado en esa fecha.</p></div>`;
+  const t = ret ? asisMin(ret.hora) : null, ausente = (m==='A'||m==='J');
+  const estado = ausente ? cpChip(m==='A'?'Ausente sin justificación':'Ausente justificado', m) : ret ? cpChip('Retiro temprano '+asisH12(t)+(t>=720?' pm':' am'), 'R') : (m==='T' ? cpChip('Llegó tarde','R') : cpChip('Presente','P'));
+  const filas = bl.map(b=>{
+    if(b.tipo && b.tipo!=='clase') return `<tr style="color:#9AA3B5"><td style="text-align:left">${asisRangoTxt(b)}</td><td style="text-align:left">${esc(b.materia)}</td><td></td><td></td></tr>`;
+    let r;
+    if(ausente) r = cpChip('Perdió 1 h clase', m);
+    else if(ret){ const a = asisMin(b.ini), z = asisMin(b.fin); if(z<=t) r = cpChip('Recibió','P'); else if(a>=t) r = cpChip('Perdió 1 h clase','R'); else r = cpChip('Pierde '+(z-t)+' min','R'); }
+    else r = cpChip('Recibió','P');
+    return `<tr><td style="text-align:left">${asisRangoTxt(b)}</td><td style="text-align:left;font-weight:600">${esc(b.materia)}</td><td style="text-align:left;color:#6B7589">${esc(b.maestra)}</td><td style="text-align:left">${r}</td></tr>`;
+  }).join('');
+  const motivo = ausente && m==='J' ? (asisDatos().mot[grado+'|'+f+'|'+estId]||'') : '';
+  return `<div class="card" id="cp_print"><div class="card-title" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">${esc(asisFechaLarga(f))} ${estado}${motivo?`<span class="nota-chica">Motivo: ${esc(motivo)}</span>`:''}</div>
+    <div class="table-wrap"><table class="as-tabla"><thead><tr><th style="text-align:left">Hora</th><th style="text-align:left">Materia</th><th style="text-align:left">Maestra</th><th style="text-align:left">Resultado</th></tr></thead><tbody>${filas}</tbody></table></div>
+    <div class="btn-row" style="margin-top:12px"><button class="btn" onclick="cpImprimir()">🖨 Imprimir</button></div></div>`;
+}
+function cpGradoHtml(grado, ests, rg){
+  const datos = ests.map(e=>({e, r:cpCalcular(grado, e.id, rg.ini, rg.fin)}));
+  const nombres = []; const prog = {};
+  datos.forEach(({r})=>r.orden.forEach(n=>{ if(!nombres.includes(n)) nombres.push(n); prog[n] = Math.max(prog[n]||0, r.mats[n].prog); }));
+  const progTot = Math.max.apply(null, [0].concat(datos.map(d=>d.r.prog)));
+  const th = nombres.map(n=>`<th style="font-size:11px">${esc(n)}</th>`).join('');
+  const celda = v => v ? `<td><span style="display:inline-block;min-width:54px;padding:4px 8px;border-radius:9px;background:${v>=80?'#F6CDBB':v>=40?'#FBE5DC':'#FFF1D2'};color:${v>=40?'#B5552B':'#9A6A00'};font-weight:700;font-size:12.5px">${cpFmtCorto(v)}</span></td>` : '<td style="color:#C3CAD8">·</td>';
+  const filas = datos.map(({e,r})=>{
+    const motivo = [r.diasA.length?cpChip(r.diasA.length+' día'+(r.diasA.length>1?'s':'')+' · sin justificar','A'):'', r.diasJ.length?cpChip(r.diasJ.length+' día'+(r.diasJ.length>1?'s':'')+' · justificado','J'):'', r.diasR.length?cpChip(r.diasR.length+' retiro'+(r.diasR.length>1?'s':''),'R'):''].join('');
+    return `<tr><td style="text-align:left;font-weight:600"><a href="#" onclick="cpVerEst('${e.id}'); return false;" style="color:inherit;text-decoration:underline dotted">${esc(asisNombre(e))}</a></td>${nombres.map(n=>celda((r.mats[n]||{}).perdio||0)).join('')}<td>${r.perdio?`<b>${cpFmt(r.perdio)}</b>`:'<span style="color:#C3CAD8">—</span>'}</td><td style="text-align:left">${motivo}</td></tr>`; }).join('');
+  const avi = datos.length ? cpAvisos(datos[0].r, rg) : '';
+  return `<div class="card" id="cp_print"><div class="card-title">Clases perdidas por estudiante · ${esc(rg.tit)} (de las que debían recibir)</div>
+    ${nombres.length ? `<div class="table-wrap"><table class="as-tabla"><thead><tr><th style="text-align:left">Estudiante</th>${th}<th>Total</th><th style="text-align:left">Motivo</th></tr>
+    <tr style="background:#F6F8FC"><td style="text-align:left;color:#6B7589;font-weight:600">Debían recibir</td>${nombres.map(n=>`<td style="font-weight:600">${cpFmtCorto(prog[n])}</td>`).join('')}<td><b>${cpFmtCorto(progTot)}</b></td><td></td></tr></thead><tbody>${filas}</tbody></table></div>` : `<p class="empty">No hay clases contadas en este rango (revisa que haya listas tomadas y horario cargado).</p>`}
+    ${CP_LEYENDA}<p class="nota-chica" style="margin:10px 0 0">Toca el nombre de un estudiante para ver su detalle. Solo cuentan los días con lista tomada.</p>${avi}
+    <div class="btn-row" style="margin-top:12px"><button class="btn" onclick="cpImprimir()">🖨 Imprimir</button></div></div>`;
+}
+function cpImprimir(){
+  const el = document.getElementById('cp_print'); if(!el){ showToast('No hay nada para imprimir.'); return; }
+  const cl = el.cloneNode(true); cl.querySelectorAll('.btn-row,button').forEach(x=>x.remove());
+  const cierre = '<' + '/script>';
+  const html = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Clases perdidas</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}table{border-collapse:collapse;width:100%}th,td{border:1px solid #bbb;padding:6px 8px;font-size:12px;text-align:left}th{background:#eee}.card-title{font-size:16px;font-weight:700;margin:0 0 10px}.nota-chica{font-size:11px;color:#555}</style></head><body>'+cl.innerHTML+'<script>window.onload=function(){window.print();}'+cierre+'</body></html>';
+  const v = window.open('', '_blank');
+  if(!v){ showToast('El navegador bloqueó la ventana emergente. Permítela e intenta de nuevo.'); return; }
+  v.document.write(html); v.document.close();
+  showToast('En el diálogo de impresión elige "Guardar como PDF".');
+}
 </script>
 
 </body>
