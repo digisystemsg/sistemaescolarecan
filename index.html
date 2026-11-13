@@ -778,7 +778,7 @@ if('serviceWorker' in navigator){
    Cada entrega lleva un número de versión. Al abrir la plataforma (y cada cierto rato, o al volver a la
    pestaña) se compara con la versión publicada; si es distinta, aparece un aviso discreto abajo.
    Si es la misma, no pasa nada. Súbele el número cada vez que se publique una actualización. */
-const APP_VERSION = '2026-11-13-1100';
+const APP_VERSION = '2026-11-13-1130';
 let _avisoVersionMostrado = false, _ultimaRevisionVersion = 0;
 async function revisarVersionNueva(){
   if(_avisoVersionMostrado) return;
@@ -11871,9 +11871,27 @@ async function saveTeacher(esAdmin){
 }
 async function deleteTeacher(id){
   const t = DB.docentes.find(x=>x.id===id);
-  if(t && t.tipo==='admin'){ showToast('No se pueden eliminar las cuentas de dominio.'); return; }
   if(t && esPropietario(t)){ showToast('Esta cuenta no se puede eliminar.'); return; }
   if(id === currentUser.id){ showToast('No puedes eliminar tu propia cuenta mientras la usas.'); return; }
+  if(t && t.tipo==='admin'){
+    // cuentas de Dirección, Administrativo, Asistente, Coordinación…: solo las puede quitar Mantenimiento
+    if(!puedeCambiarVista(currentUser) || propEnVistaDocente(currentUser)){ showToast('Solo Mantenimiento de plataforma puede eliminar estas cuentas.'); return; }
+    if(puedeCambiarVista(t)){ showToast('Las cuentas de Mantenimiento no se pueden eliminar.'); return; }
+    if(!confirm('¿Eliminar la cuenta de "'+t.nombre+'" ('+domainLabel(t)+')?\n\nDejará de poder entrar a la plataforma. Esto no se puede deshacer.')) return;
+    commit(doc=>{
+      const i = doc.docentes.findIndex(x=>x.id===id);
+      if(i<0) return;
+      const q = doc.docentes[i];
+      const gr = []; (q.asignaciones||[]).forEach(a=>{ if(gr.indexOf(a.grado)<0) gr.push(a.grado); });
+      doc.conducta = doc.conducta || {}; doc.conducta.bajas = doc.conducta.bajas || {};
+      if(gr.length) doc.conducta.bajas[id] = {nombre: q.nombre, desde: 1, grados: gr};
+      doc.docentes.splice(i,1);
+    });
+    registrar('Usuario', 'Eliminó la cuenta de '+t.nombre);
+    showToast('Cuenta eliminada.');
+    render();
+    return;
+  }
   if(!confirm('¿Eliminar este usuario?')) return;
   /* desde qué período deja de contar su conducta: el período en curso (o el que sigue si estamos entre períodos) */
   let def = 1; const hoy = (typeof asisHoyLocal==='function') ? asisHoyLocal() : '';
@@ -12096,7 +12114,7 @@ function renderPersonalizar(){
               <button class="btn btn-sm" onclick="openTeacherModal('${t.id}')">Editar</button>
               <button class="btn btn-sm" onclick="definirClave('${t.id}')">Guardar</button>
               ${!esPropietario(t)?`<button class="btn btn-sm" onclick="regenerarClave('${t.id}')">Regenerar contraseña</button>`:''}
-              ${(soloDir && !isAdmin(t) && !esPropietario(t))?`<button class="btn btn-sm btn-danger" onclick="deleteTeacher('${t.id}')">Eliminar usuario</button>`:''}
+              ${(soloDir && !esPropietario(t) && t.id!==currentUser.id && (!isAdmin(t) || (t.tipo==='admin' && puedeCambiarVista(currentUser) && !puedeCambiarVista(t))))?`<button class="btn btn-sm btn-danger" onclick="deleteTeacher('${t.id}')">Eliminar usuario</button>`:''}
             </td>
           </tr>`).join('')}
       </tbody>
