@@ -778,7 +778,7 @@ if('serviceWorker' in navigator){
    Cada entrega lleva un número de versión. Al abrir la plataforma (y cada cierto rato, o al volver a la
    pestaña) se compara con la versión publicada; si es distinta, aparece un aviso discreto abajo.
    Si es la misma, no pasa nada. Súbele el número cada vez que se publique una actualización. */
-const APP_VERSION = '2026-11-09-1445';
+const APP_VERSION = '2026-11-13-0900';
 let _avisoVersionMostrado = false, _ultimaRevisionVersion = 0;
 async function revisarVersionNueva(){
   if(_avisoVersionMostrado) return;
@@ -4013,6 +4013,7 @@ function claveSegura(txt){ return requisitosClave(txt).every(r=>r.ok); }
 function debeCambiarClave(u){
   if(!u || sesionEstudiante) return false;
   u = (DB.docentes||[]).find(x=>x.id===u.id) || u;      // siempre la copia más reciente
+  if(u.cambiarClave) return true;                      // Dirección regeneró su contraseña: debe crear una propia
   if(u.tipo !== 'docente') return false;               // administradores y propietaria conservan su contraseña
   if(!u.clave) return false;
   if(u.clave === hashClave('ecan') || u.clave === hashClave('ECAN') || u.clave === hashClave('Ecan')) return true;
@@ -4029,7 +4030,7 @@ function revisarCambioClave(previa){
   d.innerHTML = `<div style="background:#fff;color:#14213d;border-radius:16px;max-width:440px;width:100%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.4);border-top:6px solid #d62839;">
     <div style="font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#d62839;">Seguridad</div>
     <h2 style="margin:6px 0 8px;font-size:22px;">Crea tu propia contraseña</h2>
-    <p style="margin:0 0 14px;font-size:15.5px;line-height:1.5;">Tu contraseña actual es la que se entrega al inicio y es igual para todos. Para cuidar la información de los estudiantes, crea una propia.</p>
+    <p style="margin:0 0 14px;font-size:15.5px;line-height:1.5;">${((DB.docentes||[]).find(x=>currentUser&&x.id===currentUser.id)||{}).cambiarClave ? 'Tu contraseña fue restablecida. Para cuidar la información de los estudiantes, crea una propia.' : 'Tu contraseña actual es la que se entrega al inicio y es igual para todos. Para cuidar la información de los estudiantes, crea una propia.'}</p>
     <label for="cf_nueva" style="font-weight:700;font-size:14px;">Nueva contraseña</label>
     <input type="password" id="cf_nueva" autocomplete="new-password" style="width:100%;margin:4px 0 10px;">
     <label for="cf_rep" style="font-weight:700;font-size:14px;">Escríbela otra vez</label>
@@ -4057,7 +4058,7 @@ function revisarCambioClave(previa){
     if(previa){ d.remove(); showToast('Vista previa: tu contraseña no cambió.'); return; }
     ok.disabled = true; ok.textContent = 'Guardando…';
     const h = hashClave(nueva), yo = currentUser.id;
-    commit(doc=>{ const t = (doc.docentes||[]).find(x=>x.id===yo); if(t){ t.clave = h; t.claveTexto = ''; } });
+    commit(doc=>{ const t = (doc.docentes||[]).find(x=>x.id===yo); if(t){ t.clave = h; t.claveTexto = ''; delete t.cambiarClave; } });
     try{ await flush(); }catch(e){}
     if(pendientes.length > 0){
       document.getElementById('cf_error').textContent = 'No se pudo guardar. Revisa tu conexión e intenta de nuevo.';
@@ -5443,14 +5444,15 @@ function asisResumenHtml(grado, p){
   dias.forEach(d=>ests.forEach(e=>{ const m = asisMarca(grado,d,e.id); if(m==='J'){ const x = asisDatos().mot[grado+'|'+d+'|'+e.id] || 'Sin motivo anotado'; mot[x]=(mot[x]||0)+1; } }));
   const mm = Object.entries(mot).sort((a,b)=>b[1]-a[1]), mx = mm.length ? mm[0][1] : 1;
   const motHtml = mm.length ? mm.map(([k,v])=>`<div class="as-mb"><span>${esc(k)}</span><i style="width:${Math.max(6,v/mx*140)}px"></i><em>${v}</em></div>`).join('') : '<p class="nota-chica">Sin ausencias ni justificadas.</p>';
-  const filas = porEst.map(({e,c},i)=>`<tr><td>${i+1}. ${esc(asisNombre(e))}</td><td class="as-tP">${c.P}</td><td class="as-tT">${c.T}</td><td class="as-tA">${c.A}</td><td class="as-tJ">${c.J}</td><td>${c.total}</td><td>${asisPorcentaje(c).toFixed(1)}%</td>
+  const pj = (n,t)=> t ? ((n/t*100).toFixed(1).replace(/\.0$/,''))+'%' : '—';
+  const filas = porEst.map(({e,c},i)=>`<tr><td>${i+1}. ${esc(asisNombre(e))}</td><td class="as-tP">${c.P}</td><td class="as-tP">${pj(c.P,c.total)}</td><td class="as-tT">${c.T}</td><td class="as-tT">${pj(c.T,c.total)}</td><td class="as-tA">${c.A}</td><td class="as-tA">${pj(c.A,c.total)}</td><td class="as-tJ">${c.J}</td><td class="as-tJ">${pj(c.J,c.total)}</td><td><b>${pj(c.A+c.J,c.total)}</b></td><td>${c.total}</td>
     <td><span class="as-bol">${asisTextoBoleta(c)}</span> <button class="btn btn-sm" onclick="asisPasarABoleta('${esc(grado)}',${p},'${e.id}');showToast('Pasó a la boleta.');render()">Pasar</button></td></tr>`).join('');
   return `${kpis}
   <div class="as-g2"><div class="card"><div class="card-title">Por semana</div><div class="as-bars">${bars}</div><div class="as-lg">${lg}</div></div>
   <div class="card"><div class="card-title">Todo el período</div><div class="as-donut" style="background:${grados}"><span>${asistencia.toFixed(0)}%</span></div><div class="as-lg" style="text-align:center">asistencia</div>
   <div class="card-title" style="margin-top:12px">Motivos de las ausencias justificadas</div>${motHtml}</div></div>
-  <div class="card"><div class="card-title">Por estudiante</div><div class="table-wrap"><table class="as-tabla"><thead><tr><th>Estudiante</th><th>Presente</th><th>Tardías</th><th>Sin justificar</th><th>Justificados</th><th>Total días</th><th>% inasist.</th><th>Para la boleta</th></tr></thead><tbody>${filas}</tbody></table></div>
-  <p class="nota-chica"><b>9%/43</b> = 9% de inasistencia sobre 43 días de clase. Los días se cuentan solo cuando se tomó lista y no son feriados. Las justificadas cuentan como asistencia.</p>
+  <div class="card"><div class="card-title">Por estudiante</div><div class="table-wrap"><table class="as-tabla"><thead><tr><th>Estudiante</th><th>Presente</th><th>%</th><th>Tardías</th><th>%</th><th>Sin justificar</th><th>%</th><th>Justificados</th><th>%</th><th>% Inasistencia<br><small style="font-weight:400">(sin justif. + justif.)</small></th><th>Total días</th><th>Para la boleta</th></tr></thead><tbody>${filas}</tbody></table></div>
+  <p class="nota-chica">Cada porcentaje es sobre el total de días de clase. <b>Para la boleta</b> usa solo las ausencias sin justificación: <b>9%/43</b> = 9% sobre 43 días de clase. Los días se cuentan solo cuando se tomó lista y no son feriados. Las justificadas cuentan como asistencia.</p>
   <div class="btn-row"><button class="btn btn-primary" onclick="asisPasarTodasABoleta('${esc(grado)}',${p})">Pasar todo el grupo a las boletas</button></div></div>`;
 }
 
@@ -6426,14 +6428,24 @@ function condNota(estId, p, docId){ const v = (condDatos().notas||{})[estId+'|'+
 function condObs(estId, p){ return String(((condDatos().obs||{})[estId+'|'+p]) || '').trim(); }
 /* Docentes que salen en la tabla de conducta de un grado: los que tienen clases asignadas ahí,
    más los que ya tienen notas de conducta puestas a estudiantes de ese grado (por ejemplo, cargadas desde el Excel). */
-function docentesDeGradoConducta(grado){
+function docentesDeGradoConducta(grado, periodo){
   const ids = new Set();
   const notas = (condDatos().notas)||{};
   const est = new Set(DB.estudiantes.filter(e=>e.grado===grado).map(e=>e.id));
   Object.keys(notas).forEach(k=>{ const p = k.split('|'); if(est.has(p[0])) ids.add(p[2]); });
   const extra = (condDatos().docentes)||{};
-  return DB.docentes.filter(d=>(d.asignaciones||[]).some(a=>a.grado===grado) || ids.has(d.id) || extra[grado+'|'+d.id]===1)
-    .slice().sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre),'es'));
+  const lista = DB.docentes.filter(d=>(d.asignaciones||[]).some(a=>a.grado===grado) || ids.has(d.id) || extra[grado+'|'+d.id]===1);
+  /* docentes eliminados: su conducta cuenta solo en los períodos anteriores a aquel en que se eliminaron */
+  if(periodo){
+    const bajas = (condDatos().bajas)||{};
+    Object.keys(bajas).forEach(id=>{
+      const b = bajas[id]; if(!b || DB.docentes.some(d=>d.id===id)) return;
+      if(!(Number(b.desde) > periodo)) return;
+      if((b.grados||[]).indexOf(grado) < 0 && !ids.has(id)) return;
+      lista.push({id, nombre:(b.nombre||'Docente eliminado'), asignaciones:[], _baja:true});
+    });
+  }
+  return lista.slice().sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre),'es'));
 }
 /* Para el menú de la carga del Excel: primero los que dan clases en el grado y después todos los demás */
 function docentesParaImportar(grado){
@@ -6446,7 +6458,7 @@ function docentesParaImportar(grado){
 function condPromedio(estId, p){
   const e = DB.estudiantes.find(x=>x.id===estId);
   if(!e) return null;
-  const ids = docentesDeGradoConducta(e.grado).map(d=>d.id);
+  const ids = docentesDeGradoConducta(e.grado, p).map(d=>d.id);
   const vals = ids.map(id=>condNota(estId, p, id)).filter(v=>v!==null && !isNaN(v));
   return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
 }
@@ -6682,11 +6694,11 @@ function renderNotasConducta(){
   const g0 = getPref('condGrado','');
   const grado = (g0 && grados.includes(g0)) ? g0 : grados[0];
   const periodo = Math.min(4, Math.max(1, Number(getPref('condPer',1))||1));
-  const docs = docentesDeGradoConducta(grado);
+  const docs = docentesDeGradoConducta(grado, periodo);
   const estudiantes = ordenarEstudiantes(estudiantesDelGrado(grado, periodo), getPref('ordenEst','apellidos'));
   const esAdm = isAdmin(currentUser) || esOrientador(currentUser, grado);
   const base = !currentUser.soloLectura && puedeEditarPanel(currentUser,'reportes');
-  const da = d => base && (esAdm || d.id===currentUser.id);
+  const da = d => base && !d._baja && (esAdm || d.id===currentUser.id);
   const daObs = base && (esAdm || docs.some(d=>d.id===currentUser.id));
   const resaltar = getPref('condEstResaltar','');
   const th = 'style="padding:6px 8px; background:#2E5C9A; color:#fff; font-size:12.5px; text-align:center; border:1px solid #fff;"';
@@ -6719,7 +6731,7 @@ function renderNotasConducta(){
   <table class="ledger-table" style="min-width:${360+docs.length*90}px;">
     <thead><tr>
       <th ${th}>N°</th><th ${th}>Estudiante</th>
-      ${docs.map(d=>`<th ${th}>${esc(nombreDocenteVista(d))}${(esAdm && base && !(d.asignaciones||[]).some(a=>a.grado===grado) && ((condDatos().docentes||{})[grado+'|'+d.id]===1) && !estudiantes.some(e=>[1,2,3,4].some(pp=>condNota(e.id,pp,d.id)!==null))) ? ` <a href="javascript:void(0)" title="Quitar esta columna" onclick="condQuitarDocente('${esc(grado)}','${d.id}')" style="color:#fff; margin-left:4px;">×</a>` : ''}</th>`).join('')}
+      ${docs.map(d=>`<th ${th}>${esc(nombreDocenteVista(d))}${(esAdm && base && !d._baja && !(d.asignaciones||[]).some(a=>a.grado===grado) && ((condDatos().docentes||{})[grado+'|'+d.id]===1) && !estudiantes.some(e=>[1,2,3,4].some(pp=>condNota(e.id,pp,d.id)!==null))) ? ` <a href="javascript:void(0)" title="Quitar esta columna" onclick="condQuitarDocente('${esc(grado)}','${d.id}')" style="color:#fff; margin-left:4px;">×</a>` : ''}</th>`).join('')}
       <th ${th}>Promedio</th><th ${th}>Reportes</th><th ${th}>Observaciones</th>
     </tr></thead>
     <tbody>
@@ -7323,6 +7335,37 @@ function alternarDetalleReporte(id){
   if(viewState.repAbierto) registrarVista(id);
   render();
 }
+/* ---- Respaldo de reportes mientras se confirma el guardado ---- */
+function outboxClave(){ return 'ecan_outbox_reportes_' + (currentUser ? currentUser.id : ''); }
+function outboxLeer(){ try{ const v = JSON.parse(localStorage.getItem(outboxClave())||'[]'); return Array.isArray(v) ? v : []; }catch(e){ return []; } }
+function outboxEscribir(l){ try{ localStorage.setItem(outboxClave(), JSON.stringify(l)); }catch(e){} }
+function outboxReporteAgregar(r){ const l = outboxLeer().filter(x=>x.id!==r.id); l.push(r); outboxEscribir(l); }
+function outboxReporteQuitar(id){ outboxEscribir(outboxLeer().filter(x=>x.id!==id)); }
+async function esperarGuardado(ms){
+  const t0 = Date.now(); programarGuardado(0);
+  while(Date.now() - t0 < ms){
+    if(!guardando && pendientes.length===0) return true;
+    await new Promise(r=>setTimeout(r,250));
+  }
+  return false;
+}
+/* Revisa cada pocos segundos: si un reporte del respaldo ya está confirmado en la nube, lo quita; si no está, lo vuelve a mandar */
+setInterval(function(){
+  try{
+    if(!currentUser || sesionEstudiante || guardando || pendientes.length>0) return;
+    const l = outboxLeer(); if(!l.length) return;
+    const faltan = l.filter(r=>!(DB.reportes||[]).some(x=>x.id===r.id));
+    if(faltan.length===0){ outboxEscribir([]); return; }
+    faltan.forEach(rep=>{
+      commit(doc=>{
+        doc.reportes = doc.reportes || [];
+        if(!doc.reportes.some(x=>x.id===rep.id)) doc.reportes.push(rep);
+        doc.config.correlativoReportes = Math.max(doc.config.correlativoReportes||0, rep.numero||0);
+      });
+    });
+    showToast('Se recuperó un reporte que no se había alcanzado a guardar. Se está enviando.');
+  }catch(e){}
+}, 6000);
 async function guardarReporte(){
   // Evita reportes duplicados si se hace clic varias veces seguidas
   // (por ejemplo, con internet lento y la persona pensando que no funcionó).
@@ -7373,14 +7416,24 @@ async function guardarReporte(){
       imagen: imagen,
       docente: currentUser.nombre, docenteId: currentUser.id
     };
+    // Copia de seguridad en este equipo: si el guardado en la nube falla o la página se cierra antes de terminar,
+    // el reporte se recupera solo la próxima vez (y no hay que volver a escribirlo).
+    outboxReporteAgregar(reporte);
     commit(doc=>{
       doc.reportes = doc.reportes || [];
-      doc.reportes.push(reporte);
+      if(!doc.reportes.some(r=>r.id===reporte.id)) doc.reportes.push(reporte);
       doc.config.correlativoReportes = Math.max(doc.config.correlativoReportes||0, reporte.numero);
     });
     registrar('Reporte disciplinario', correlativoTexto(reporte.numero) + ' · ' + (nivelFalta(nivelReal).noEsFalta?nivelFalta(nivelReal).nombre.toLowerCase():'falta '+nivelFalta(nivelReal).nombre.toLowerCase()) + ' — ' + reporte.estudiante);
+    // El formulario solo se pone en blanco cuando el servidor ya confirmó el guardado
+    const confirmado = await esperarGuardado(15000);
     setPref('repEst','');
-    showToast('Reporte guardado. El formulario quedó en blanco.');
+    if(confirmado){
+      outboxReporteQuitar(reporte.id);
+      showToast('✓ Reporte guardado y confirmado. El formulario quedó en blanco.');
+    }else{
+      showToast('⏳ El reporte quedó en espera: no se pudo confirmar el guardado (internet lento). Está guardado en este equipo y se enviará solo. No lo vuelvas a escribir ni cierres la página.');
+    }
     render();
   }catch(e){
     console.error('guardarReporte', e);
@@ -11817,9 +11870,22 @@ async function deleteTeacher(id){
   if(t && esPropietario(t)){ showToast('Esta cuenta no se puede eliminar.'); return; }
   if(id === currentUser.id){ showToast('No puedes eliminar tu propia cuenta mientras la usas.'); return; }
   if(!confirm('¿Eliminar este usuario?')) return;
+  /* desde qué período deja de contar su conducta: el período en curso (o el que sigue si estamos entre períodos) */
+  let def = 1; const hoy = (typeof asisHoyLocal==='function') ? asisHoyLocal() : '';
+  const pa = hoy ? asisPeriodoDe(hoy) : null;
+  if(pa) def = pa; else { def = 4; for(let p=1;p<=4;p++){ const r = asisRango(p); if(r && hoy < r.ini){ def = p; break; } } }
+  let d = prompt('Sus notas de conducta cuentan en los períodos ANTERIORES al que escribas y dejan de contar desde ese período.\n\n¿Desde qué período deja de contar? (1 a 4)', String(def));
+  if(d===null) return;
+  d = Math.min(4, Math.max(1, parseInt(d,10) || def));
   commit(doc=>{
     const i = doc.docentes.findIndex(x=>x.id===id);
-    if(i>=0) doc.docentes.splice(i,1);
+    if(i<0) return;
+    const t = doc.docentes[i];
+    doc.conducta = doc.conducta || {}; doc.conducta.bajas = doc.conducta.bajas || {};
+    const gr = []; (t.asignaciones||[]).forEach(a=>{ if(gr.indexOf(a.grado)<0) gr.push(a.grado); });
+    Object.keys(doc.conducta.docentes||{}).forEach(k=>{ const q = k.split('|'); if(q[q.length-1]===id && doc.conducta.docentes[k]===1 && gr.indexOf(q[0])<0) gr.push(q[0]); });
+    doc.conducta.bajas[id] = {nombre: nombreDocenteVista(t) || t.nombre, desde: d, grados: gr};
+    doc.docentes.splice(i,1);
   });
   showToast('Usuario eliminado.');
   render();
@@ -12024,7 +12090,7 @@ function renderPersonalizar(){
             <td>
               <button class="btn btn-sm" onclick="openTeacherModal('${t.id}')">Editar</button>
               <button class="btn btn-sm" onclick="definirClave('${t.id}')">Guardar</button>
-              ${tieneClave(t)?`<button class="btn btn-sm btn-danger" onclick="quitarClave('${t.id}')">Quitar</button>`:''}
+              ${!esPropietario(t)?`<button class="btn btn-sm" onclick="regenerarClave('${t.id}')">Regenerar contraseña</button>`:''}
               ${(soloDir && !isAdmin(t) && !esPropietario(t))?`<button class="btn btn-sm btn-danger" onclick="deleteTeacher('${t.id}')">Eliminar usuario</button>`:''}
             </td>
           </tr>`).join('')}
@@ -12721,6 +12787,39 @@ function renderTarjetaClave(){
       ${esPropietario(currentUser)?'':`<div class="note" style="margin-top:14px;">Cualquier cuenta de acceso total puede consultar y restablecer las contraseñas del personal.</div>`}
     </div>`}
   </div>`;
+}
+/* Regenerar contraseña: Dirección elige una temporal o dejarla sin contraseña; en ambos casos la persona debe crear la suya al entrar */
+function regenerarClave(id){
+  const t0 = DB.docentes.find(x=>x.id===id);
+  if(!t0) return;
+  if(esPropietario(t0)){ showToast('Esta cuenta no se puede modificar desde aquí.'); return; }
+  let d = document.getElementById('regen_modal'); if(d) d.remove();
+  d = document.createElement('div'); d.id = 'regen_modal';
+  d.style.cssText = 'position:fixed;inset:0;background:rgba(13,37,84,.45);z-index:10050;display:flex;align-items:center;justify-content:center;padding:16px;';
+  d.innerHTML = `<div style="background:#fff;color:#14213d;border-radius:16px;max-width:430px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+    <h3 style="margin:0 0 4px;font-size:19px;">Regenerar contraseña</h3>
+    <p style="margin:0 0 14px;color:#556178;font-size:14px;">${esc(t0.nombre)} · <code>${esc(t0.usuario||'')}</code></p>
+    <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer;margin-bottom:6px;"><input type="radio" name="rg_op" value="poner" checked style="margin-top:4px"> <span><b>Colocar una contraseña temporal</b></span></label>
+    <input type="text" id="rg_txt" placeholder="Escribe la contraseña temporal (mínimo 4 caracteres)" autocomplete="off" style="width:100%;margin:0 0 12px 26px;max-width:calc(100% - 26px);">
+    <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer;margin-bottom:12px;"><input type="radio" name="rg_op" value="ninguna" style="margin-top:4px"> <span><b>Dejarlo sin contraseña</b><br><span style="font-size:13px;color:#556178;">Entra sin pedirla.</span></span></label>
+    <p style="margin:0 0 14px;padding:10px 12px;background:#EEF2FA;border-radius:10px;font-size:13px;color:#33415c;">En los dos casos, al entrar la persona tendrá que <b>crear su propia contraseña</b>.</p>
+    <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-sm" id="rg_no">Cancelar</button><button class="btn btn-sm btn-primary" id="rg_ok">Confirmar</button></div></div>`;
+  document.body.appendChild(d);
+  const txt = document.getElementById('rg_txt');
+  d.querySelectorAll('input[name=rg_op]').forEach(r=>r.onchange=()=>{ txt.disabled = (d.querySelector('input[name=rg_op]:checked').value!=='poner'); txt.style.opacity = txt.disabled ? '.5' : '1'; });
+  document.getElementById('rg_no').onclick = ()=>d.remove();
+  document.getElementById('rg_ok').onclick = ()=>{
+    const op = d.querySelector('input[name=rg_op]:checked').value, v = txt.value.trim();
+    if(op==='poner' && v.length < 4){ showToast('La contraseña temporal debe tener al menos 4 caracteres.'); return; }
+    commit(doc=>{
+      const t = doc.docentes.find(x=>x.id===id); if(!t) return;
+      if(op==='poner'){ t.clave = hashClave(v); t.claveTexto = v; } else { delete t.clave; delete t.claveTexto; }
+      t.cambiarClave = true;
+    });
+    d.remove();
+    showToast(op==='poner' ? 'Contraseña temporal guardada. Deberá crear la suya al entrar.' : 'Quedó sin contraseña. Deberá crear la suya al entrar.');
+    render();
+  };
 }
 function quitarClave(id){
   const t0 = DB.docentes.find(x=>x.id===id);
