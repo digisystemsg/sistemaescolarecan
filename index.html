@@ -796,7 +796,7 @@ if('serviceWorker' in navigator){
    Cada entrega lleva un número de versión. Al abrir la plataforma (y cada cierto rato, o al volver a la
    pestaña) se compara con la versión publicada; si es distinta, aparece un aviso discreto abajo.
    Si es la misma, no pasa nada. Súbele el número cada vez que se publique una actualización. */
-const APP_VERSION = '2026-11-13-1500';
+const APP_VERSION = '2026-11-13-1600';
 let _avisoVersionMostrado = false, _ultimaRevisionVersion = 0;
 async function revisarVersionNueva(){
   if(_avisoVersionMostrado) return;
@@ -4092,7 +4092,7 @@ setInterval(revisarCambioClave, 1500);
 /* ===== Ver como docente (vista previa) ===== */
 function vistaPreviaTerminos(){ revisarTerminos(true); }
 function vistaPreviaClave(){ revisarCambioClave(true); }
-function vistaPreviaAviso(){ if(document.getElementById('aviso_live')) return; mostrarAvisoVentana({texto:'Reunión en 5 minutos en la dirección. (Este es un aviso de ejemplo.)', deNombre:'Dirección', para:'todos'}, null, true); }
+function vistaPreviaAviso(){ if(document.getElementById('aviso_live')) return; const t=Date.now(); mostrarChatAviso({id:'previa', deId:'x', deNombre:'Dirección', para:[currentUser.id,'y'], texto:'Reunión en 5 minutos en la dirección. (Este es un aviso de ejemplo.)', ts:t-60000, respuestas:[{id:'r1', deId:'y', deNombre:'Otra maestra', texto:'Enterada, ya voy para allá.', ts:t-30000}]}, true); }
 function vistaPreviaPausa(){ if(document.getElementById('pausa_cuenta') || document.getElementById('pausa_live')) return; iniciarCuentaPausa('Volveremos en unos minutos. (Mensaje de ejemplo.)', true); }
 function renderVistaPrevia(){
   if(!currentUser || sesionEstudiante || !puedeCambiarVista(currentUser)) return '';
@@ -4160,13 +4160,13 @@ function renderEnviarAviso(){
   const para = a=> a.para==='todos' ? 'todos' : (Array.isArray(a.para) ? a.para.map(nom).join(', ') : nom(a.para));
   return `<div class="card" id="av_card" style="margin-bottom:18px;">
     <h3 style="margin:0 0 4px;">📣 Enviar un aviso</h3>
-    <p style="margin:0 0 12px;color:var(--muted);font-size:14px;">Marca a quién se lo mandas: solo aparecen las personas que están conectadas en este momento. Les sale en una ventana y desaparece a los 10 minutos.</p>
+    <p style="margin:0 0 12px;color:var(--muted);font-size:14px;">Marca a quién se lo mandas: solo aparecen las personas que están conectadas en este momento. Les sale en una ventana donde pueden responder. Si se lo mandas a varias, todas ven las respuestas como una conversación en grupo.</p>
     <div id="av_lista" style="margin:0 0 12px;">${avListaHTML()}</div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;">
       <textarea id="av_texto" maxlength="300" rows="2" placeholder="Escribe el aviso (máximo 300 letras)" style="flex:1 1 260px;min-width:0;"></textarea>
       <button class="btn btn-primary" onclick="enviarAviso()">Enviar aviso</button>
     </div>
-    ${ult.length?`<div style="margin-top:12px;font-size:13.5px;color:var(--muted);"><b>Últimos enviados:</b><ul style="margin:6px 0 0;padding-left:20px;">${ult.map(a=>`<li>a ${esc(para(a))}: ${esc(a.texto.length>70?a.texto.slice(0,70)+'…':a.texto)}</li>`).join('')}</ul></div>`:''}
+    ${ult.length?`<div style="margin-top:12px;font-size:13.5px;color:var(--muted);"><b>Últimos enviados:</b><ul style="margin:6px 0 0;padding-left:20px;">${ult.map(a=>`<li>a ${esc(para(a))}: ${esc(a.texto.length>70?a.texto.slice(0,70)+'…':a.texto)} <button class="icon-btn" onclick="abrirAvisoPorId('${esc(a.id)}')">💬 Abrir conversación${(a.respuestas||[]).length?' ('+(a.respuestas||[]).length+')':''}</button></li>`).join('')}</ul></div>`:''}
   </div>`;
 }
 function enviarAviso(){
@@ -4181,39 +4181,131 @@ function enviarAviso(){
   commit(doc=>{
     doc.avisos = doc.avisos || [];
     const ahora = Date.now();
-    for(let i=doc.avisos.length-1;i>=0;i--){ if(ahora - doc.avisos[i].ts > 3600*1000) doc.avisos.splice(i,1); }
+    for(let i=doc.avisos.length-1;i>=0;i--){ if(ahora - avisoUlt(doc.avisos[i]) > 3600*1000) doc.avisos.splice(i,1); }
     doc.avisos.push({id, deId: currentUser.id, deNombre: esPropietario(currentUser) ? 'Administración' : currentUser.nombre, para, texto, ts: ahora});
   });
-  avisoMarcarVisto(id);
+  avisoMarcarVisto(id); avisoMarcarN(id, 1);
   if(t) t.value = '';
   _avSel = {};
   showToast(para.length===1 ? 'Aviso enviado.' : 'Aviso enviado a '+para.length+' personas.');
   render();
 }
-function revisarAvisos(){
-  if(document.getElementById('terminos_live')) return;
-  if(!currentUser || sesionEstudiante || !Array.isArray(DB.avisos) || document.getElementById('aviso_live')) return;
-  const vistos = avisosVistos(), ahora = Date.now();
-  const a = DB.avisos.find(x=> x && x.deId!==currentUser.id && (x.para==='todos' || x.para===currentUser.id || (Array.isArray(x.para) && x.para.indexOf(currentUser.id)>=0))
-    && ahora - x.ts < AVISO_VIDA_MS && ahora - x.ts > -60000 && !vistos[x.id]);
-  if(!a) return;
-  mostrarAvisoVentana(a, ()=>{ avisoMarcarVisto(a.id); setTimeout(revisarAvisos,300); }, false);
+/* ---- Conversación del aviso: quien lo recibe puede responder y, si se mandó a varias personas, todas ven todo (chat de grupo) ---- */
+function avisoMsgs(a){ return [{id:a.id, deId:a.deId, deNombre:a.deNombre, texto:a.texto, ts:a.ts}].concat(a.respuestas||[]); }
+function avisoUlt(a){ const m = avisoMsgs(a); return m[m.length-1].ts || a.ts || 0; }
+function avisoEsParticipante(a, u){ return !!(a && u && (a.deId===u.id || a.para==='todos' || a.para===u.id || (Array.isArray(a.para) && a.para.indexOf(u.id)>=0))); }
+function avisoParticipantesNombres(a){
+  const ids = [a.deId].concat(Array.isArray(a.para) ? a.para : (a.para && a.para!=='todos' ? [a.para] : []));
+  return ids.map(id=> id===currentUser.id ? 'Tú' : ((DB.docentes||[]).find(d=>d.id===id)||{}).nombre || (id===a.deId ? (a.deNombre||'Administración') : 'Otra persona'));
 }
-function mostrarAvisoVentana(a, alCerrar, previa){
+const _avisosNMem = {};
+function avisoNKey(){ return 'ecan_avisos_n_'+(currentUser?currentUser.id:''); }
+function avisoNVistos(){ let o = {}; try{ o = JSON.parse(localStorage.getItem(avisoNKey())||'{}')||{}; }catch(e){} return Object.assign(o, _avisosNMem[avisoNKey()]||{}); }
+function avisoMarcarN(id, n){
+  const k = avisoNKey(); _avisosNMem[k] = _avisosNMem[k]||{}; _avisosNMem[k][id] = Math.max(n, _avisosNMem[k][id]||0);
+  try{ const o = JSON.parse(localStorage.getItem(k)||'{}')||{}; o[id] = Math.max(n, o[id]||0); const ids = Object.keys(o); if(ids.length>60) ids.slice(0,ids.length-60).forEach(x=>delete o[x]); localStorage.setItem(k, JSON.stringify(o)); }catch(e){}
+}
+function avisoHoraTxt(ts){ try{ return new Date(ts).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}); }catch(e){ return ''; } }
+function avisoMsgsHTML(a){
+  return avisoMsgs(a).map(m=>{
+    const mio = m.deId===currentUser.id;
+    return `<div style="display:flex;flex-direction:column;align-items:${mio?'flex-end':'flex-start'};margin:6px 0;">
+      <div style="font-size:12px;color:#4d5a75;margin:0 4px 2px;">${mio?'Tú':esc(m.deNombre||'Dirección')} · ${avisoHoraTxt(m.ts)}</div>
+      <div style="max-width:88%;padding:8px 12px;border-radius:12px;background:${mio?'#DCE8FB':'#F1F3F8'};white-space:pre-wrap;word-break:break-word;font-size:15.5px;line-height:1.4;">${esc(m.texto)}</div></div>`;
+  }).join('');
+}
+function avisoBuscar(id){ return (DB.avisos||[]).find(x=>x && x.id===id); }
+function mostrarChatAviso(a, previa){
+  if(document.getElementById('aviso_live')) return;
   const d = document.createElement('div');
-  d.id = 'aviso_live';
+  d.id = 'aviso_live'; d._avId = previa ? null : a.id; d._avPrevia = !!previa; d._avN = -1;
   d.setAttribute('role','alertdialog');
-  d.style.cssText = 'position:fixed;inset:0;background:rgba(13,37,84,.55);z-index:10100;display:flex;align-items:center;justify-content:center;padding:20px;';
-  d.innerHTML = `<div style="background:#fff;color:#14213d;border-radius:16px;max-width:440px;width:100%;padding:26px;box-shadow:0 20px 60px rgba(0,0,0,.35);border-top:6px solid #d62839;">
-    <div style="font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#d62839;">📣 Aviso${a.para==='todos'?'':' para ti'}</div>
-    <div style="font-size:19px;line-height:1.45;margin:12px 0 6px;white-space:pre-wrap;word-break:break-word;">${esc(a.texto)}</div>
-    <div style="font-size:14px;color:#4d5a75;">De: ${esc(a.deNombre||'Dirección')}</div>
-    <button class="btn btn-primary" id="aviso_ok" style="margin-top:18px;width:100%;font-size:16px;padding:12px;">Entendido</button>
+  d.style.cssText = 'position:fixed;inset:0;background:rgba(13,37,84,.55);z-index:10100;display:flex;align-items:center;justify-content:center;padding:16px;';
+  const grupo = (Array.isArray(a.para) ? a.para.length : 1) > 1;
+  d.innerHTML = `<div style="background:#fff;color:#14213d;border-radius:16px;max-width:460px;width:100%;max-height:92vh;display:flex;flex-direction:column;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.35);border-top:6px solid #2F5FB3;">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#2F5FB3;">📣 Aviso${grupo?' · conversación de grupo':''}</div>
+    <div id="av_part" style="font-size:12.5px;color:#4d5a75;margin:4px 0 8px;"></div>
+    <div id="av_msgs" style="flex:1;min-height:80px;overflow:auto;border-top:1px solid #e3e8f2;border-bottom:1px solid #e3e8f2;padding:4px 2px;"></div>
+    <div style="display:flex;gap:8px;margin-top:10px;align-items:flex-end;">
+      <textarea id="av_resp" rows="2" maxlength="300" placeholder="Escribe tu respuesta…" style="flex:1;min-width:0;"></textarea>
+      <button class="btn btn-primary" id="av_enviar">Responder</button>
+    </div>
+    <button class="btn" id="aviso_ok" style="margin-top:10px;width:100%;">Cerrar</button>
   </div>`;
   document.body.appendChild(d);
+  d._avDatos = a;
+  const pintar = ()=>{
+    const x = d._avPrevia ? d._avDatos : (avisoBuscar(d._avId) || d._avDatos);
+    const n = avisoMsgs(x).length;
+    document.getElementById('av_part').textContent = 'Participan: ' + avisoParticipantesNombres(x).join(', ');
+    if(n !== d._avN){
+      d._avN = n;
+      const c = document.getElementById('av_msgs'); c.innerHTML = avisoMsgsHTML(x); c.scrollTop = c.scrollHeight;
+      if(!d._avPrevia) avisoMarcarN(x.id, n);
+    }
+  };
+  d._avPintar = pintar; pintar();
   if(previa) agregarCierrePrevia(d);
-  document.getElementById('aviso_ok').onclick = ()=>{ d.remove(); if(alCerrar) alCerrar(); };
-  document.getElementById('aviso_ok').focus();
+  document.getElementById('av_enviar').onclick = ()=>{
+    const t = document.getElementById('av_resp'); const txt = (t.value||'').trim().slice(0,300);
+    if(!txt) return;
+    if(d._avPrevia){ showToast('Es solo una vista previa: no se envía nada.'); t.value=''; return; }
+    if(responderAviso(d._avId, txt)){ t.value=''; pintar(); }
+  };
+  document.getElementById('av_resp').addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); document.getElementById('av_enviar').click(); } });
+  document.getElementById('aviso_ok').onclick = ()=>{ if(!d._avPrevia){ const x = avisoBuscar(d._avId); if(x) avisoMarcarN(x.id, avisoMsgs(x).length); } d.remove(); setTimeout(revisarAvisos,300); };
+  setTimeout(()=>{ const t=document.getElementById('av_resp'); if(t) t.focus(); }, 100);
+}
+function responderAviso(id, texto){
+  const a = avisoBuscar(id);
+  if(!a || !avisoEsParticipante(a, currentUser)){ showToast('Esta conversación ya terminó.'); return false; }
+  const rid = 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+  const nombre = esPropietario(currentUser) ? 'Administración' : currentUser.nombre;
+  commit(doc=>{
+    const x = (doc.avisos||[]).find(y=>y && y.id===id); if(!x) return;
+    x.respuestas = x.respuestas || [];
+    x.respuestas.push({id:rid, deId:currentUser.id, deNombre:nombre, texto, ts:Date.now()});
+    if(x.respuestas.length > 100) x.respuestas.splice(0, x.respuestas.length-100);
+  });
+  const y = avisoBuscar(id); if(y) avisoMarcarN(id, avisoMsgs(y).length);
+  return true;
+}
+function abrirAvisoPorId(id){
+  const a = avisoBuscar(id); if(!a){ showToast('Esta conversación ya terminó.'); return; }
+  const live = document.getElementById('aviso_live'); if(live) live.remove();
+  mostrarChatAviso(a, false);
+}
+function avisoBotonFlotante(){
+  let b = document.getElementById('av_fab');
+  const ahora = Date.now();
+  const lista = (currentUser && !sesionEstudiante && Array.isArray(DB.avisos)) ? DB.avisos.filter(x=>x && avisoEsParticipante(x, currentUser) && ahora - avisoUlt(x) < 3600*1000 && (avisoMsgs(x).length>1 || x.deId!==currentUser.id)) : [];
+  if(!lista.length || document.getElementById('aviso_live')){ if(b) b.remove(); return; }
+  lista.sort((p,q)=>avisoUlt(q)-avisoUlt(p));
+  if(!b){
+    b = document.createElement('button'); b.id = 'av_fab'; b.className = 'btn btn-primary';
+    b.style.cssText = 'position:fixed;left:16px;bottom:16px;z-index:9000;border-radius:24px;padding:10px 16px;box-shadow:0 6px 20px rgba(0,0,0,.25);';
+    document.body.appendChild(b);
+  }
+  b.dataset.id = lista[0].id;
+  b.textContent = '💬 Avisos';
+  b.onclick = ()=>abrirAvisoPorId(b.dataset.id);
+}
+function revisarAvisos(){
+  if(document.getElementById('terminos_live')) return;
+  if(!currentUser || sesionEstudiante || !Array.isArray(DB.avisos)) return;
+  const live = document.getElementById('aviso_live');
+  if(live){ if(live._avPintar && !live._avPrevia) live._avPintar(); return; }
+  const vistosN = avisoNVistos(), ahora = Date.now();
+  const a = DB.avisos.find(x=>{
+    if(!x || !avisoEsParticipante(x, currentUser)) return false;
+    const ult = avisoUlt(x);
+    if(ahora - ult > AVISO_VIDA_MS || ahora - ult < -60000) return false;
+    const ms = avisoMsgs(x), vistos = vistosN[x.id] || 0;
+    return ms.slice(vistos).some(m=>m.deId!==currentUser.id);
+  });
+  try{ avisoBotonFlotante(); }catch(e){}
+  if(!a) return;
+  mostrarChatAviso(a, false);
 }
 setInterval(revisarAvisos, 4000);
 function esc(str){ const d=document.createElement('div'); d.textContent = str==null?'':String(str); return d.innerHTML; }
