@@ -169,7 +169,25 @@
   .bol-num{ text-align:center; font-family:'JetBrains Mono',monospace; }
   .bol-fuerte{ font-weight:700; }
   .bol-total td{ font-weight:700; background:var(--panel-2); }
-  .bol-verde{ color:var(--primary-dark); }
+  .bol-verde{ color:#000; }
+  .bol-rojo{ color:#C62828 !important; font-weight:700; background:#FDE8E8 !important; }
+  .bol-alto{ color:#0a7a3f !important; font-weight:700; background:#D8F1E2 !important; }
+  /* Boleta con color: azul y celeste */
+  .boleta-hoja{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .boleta-hoja .boleta-cab{ border-bottom:3px solid #2F5FB3 !important; }
+  .boleta-hoja .boleta-colegio{ color:#1e3a6e; }
+  .boleta-hoja .boleta-ident{ background:#EEF4FF; border-radius:8px; padding:8px 12px; margin:8px 0; border-bottom:none !important; }
+  .boleta-hoja .bol-tabla th{ background:#2F5FB3; color:#fff; border-color:#2F5FB3; }
+  .boleta-hoja .bol-tabla th, .boleta-hoja .bol-tabla td, .boleta-hoja .bol-mini th, .boleta-hoja .bol-mini td{ border-color:#c9d5ec; }
+  .boleta-hoja .bol-tabla tbody tr:nth-child(even) td{ background:#F3F7FE; }
+  .boleta-hoja .bol-tabla .bol-mat{ color:#1d2a44; font-weight:600; }
+  .boleta-hoja .bol-tabla tr.bol-total td{ background:#DCE8FB; color:#000; }
+  .boleta-hoja .bol-mini th{ background:#5B9BD5; color:#fff; border-color:#5B9BD5; }
+  .boleta-hoja .boleta-col-lateral table:nth-of-type(2) th{ background:#4A86C5; border-color:#4A86C5; }
+  .boleta-hoja .boleta-col-lateral table:nth-of-type(3) th{ background:#3F7BBD; border-color:#3F7BBD; }
+  .boleta-hoja .boleta-col-lateral table:nth-of-type(4) th{ background:#3A72B0; border-color:#3A72B0; }
+  .boleta-hoja .bol-mini td{ background:#F4F9FE; }
+  .boleta-hoja .bol-obs{ background:#FFFBEA; border-color:#F0DC8C; }
   .bol-in{ width:100%; padding:2px 5px; font-size:11.5px; border:1px solid transparent;
     background:transparent; border-radius:4px; }
   .bol-in:hover{ border-color:var(--line); background:#fff; }
@@ -778,7 +796,7 @@ if('serviceWorker' in navigator){
    Cada entrega lleva un número de versión. Al abrir la plataforma (y cada cierto rato, o al volver a la
    pestaña) se compara con la versión publicada; si es distinta, aparece un aviso discreto abajo.
    Si es la misma, no pasa nada. Súbele el número cada vez que se publique una actualización. */
-const APP_VERSION = '2026-11-13-1130';
+const APP_VERSION = '2026-11-13-1500';
 let _avisoVersionMostrado = false, _ultimaRevisionVersion = 0;
 async function revisarVersionNueva(){
   if(_avisoVersionMostrado) return;
@@ -6065,7 +6083,7 @@ function renderSincronizacionEstudiante(){
 }
 /* --- Reportes disciplinarios: solo su propio historial, sin editar --- */
 function renderReportesEstudiante(est){
-  const lista = (DB.reportes||[]).filter(r=>r.estId===est.id).slice().sort((a,b)=>b.ts.localeCompare(a.ts));
+  const lista = (DB.reportes||[]).filter(r=>r.estId===est.id).slice().sort((a,b)=>(b.numero||0)-(a.numero||0) || b.ts.localeCompare(a.ts));
   return `
   <div class="page-head">
     <p class="page-eyebrow">Convivencia escolar</p>
@@ -6788,7 +6806,7 @@ function renderReportesDisc(){
 
   let cuerpo;
   if(vista === 'historial'){
-    let lista = (DB.reportes||[]).slice().sort((a,b)=>b.ts.localeCompare(a.ts));
+    let lista = (DB.reportes||[]).slice().sort((a,b)=>(b.numero||0)-(a.numero||0) || b.ts.localeCompare(a.ts));
     if(gradoF) lista = lista.filter(r=>r.grado===gradoF);
     if(estF) lista = lista.filter(r=>r.estId===estF);
     const busca = (getPref('repNum','')||'').replace(/\D/g,'');
@@ -8349,7 +8367,7 @@ function listaReportesFiltrados(){
   const gradoF = getPref('repGrado',''), estF = getPref('repEst','');
   const tipoF = getPref('repTipoFalta','');
   const periodoTipo = getPref('repPeriodo',''), periodoValor = getPref('repPeriodoValor','');
-  let lista = reportesVisibles(currentUser).slice().sort((a,b)=>b.ts.localeCompare(a.ts));
+  let lista = reportesVisibles(currentUser).slice().sort((a,b)=>(b.numero||0)-(a.numero||0) || b.ts.localeCompare(a.ts));
   if(gradoF) lista = lista.filter(r=>r.grado===gradoF);
   if(estF) lista = lista.filter(r=>r.estId===estF);
   if(tipoF) lista = lista.filter(r=>r.nivel===tipoF);
@@ -14180,6 +14198,7 @@ function renderBoletaEstudiante(est, grado, forzarSoloLectura){
   const finalGlobal = finalGlobalVisible(est.id, grado, vis);
 
   const n1 = v => v===null||v===undefined ? '' : v.toFixed(0);
+  const rj = v => (v===null || v===undefined) ? '' : (Math.round(v) < 70 ? ' bol-rojo' : (Math.round(v) >= 90 ? ' bol-alto' : ''));   // menores de 70 en rojo, 90 o más en verde
   const campo = (valor, onchange, ancho, centro) => edit
     ? `<input class="bol-in" style="${ancho?'width:'+ancho+';':''}${centro?'text-align:center;':''}"
         value="${esc(valor)}" onchange="${onchange}">`
@@ -14193,8 +14212,8 @@ function renderBoletaEstudiante(est, grado, forzarSoloLectura){
   const filaAsig = (a, botones) => {
     return `<tr>
       <td class="bol-mat">${esc(a.nombre.toUpperCase())}${botones||''}</td>
-      ${[1,2,3,4].map(p=>`<td class="bol-num">${vis.indexOf(p)>=0 ? n1(periodInfo(est.id, a.id, p, grado).valor) : ''}</td>`).join('')}
-      <td class="bol-num bol-fuerte">${n1(finalMateriaVisible(est.id, a.id, grado, vis))}</td>
+      ${[1,2,3,4].map(p=>{ const v = vis.indexOf(p)>=0 ? periodInfo(est.id, a.id, p, grado).valor : null; return `<td class="bol-num${rj(v)}">${n1(v)}</td>`; }).join('')}
+      <td class="bol-num bol-fuerte${rj(finalMateriaVisible(est.id, a.id, grado, vis))}">${n1(finalMateriaVisible(est.id, a.id, grado, vis))}</td>
     </tr>`;
   };
   const filasMaterias = items.map((it,k)=>{
@@ -14202,8 +14221,8 @@ function renderBoletaEstudiante(est, grado, forzarSoloLectura){
     return it.lista.map((a,m)=>filaAsig(a, m===0 ? botonesMover('ciencias', k, 'el bloque de ciencias (Física, Química y Biología)') : '')).join('')
       + (filaCiencia ? `<tr style="font-weight:700;">
       <td class="bol-mat">CIENCIA Y TECNOLOGÍA PROMEDIO</td>
-      ${filaCiencia.periodos.map(v=>`<td class="bol-num">${n1(v)}</td>`).join('')}
-      <td class="bol-num bol-fuerte">${n1(filaCiencia.final)}</td></tr>` : '');
+      ${filaCiencia.periodos.map(v=>`<td class="bol-num${rj(v)}">${n1(v)}</td>`).join('')}
+      <td class="bol-num bol-fuerte${rj(filaCiencia.final)}">${n1(filaCiencia.final)}</td></tr>` : '');
   }).join('');
 
   return `
@@ -14231,8 +14250,8 @@ function renderBoletaEstudiante(est, grado, forzarSoloLectura){
             ${asigs.length===0?`<tr><td colspan="6" class="empty">Esta aula todavía no tiene asignaturas.</td></tr>`:filasMaterias}
             <tr class="bol-total">
               <td>PROMEDIO DE PERÍODO</td>
-              ${[1,2,3,4].map(p=>`<td class="bol-num">${vis.indexOf(p)>=0 ? n1(promedioPeriodoEstudiante(est.id, grado, p)) : ''}</td>`).join('')}
-              <td class="bol-num bol-verde">${n1(finalGlobal)}</td>
+              ${[1,2,3,4].map(p=>{ const v = vis.indexOf(p)>=0 ? promedioPeriodoEstudiante(est.id, grado, p) : null; return `<td class="bol-num${rj(v)}">${n1(v)}</td>`; }).join('')}
+              <td class="bol-num bol-verde${rj(finalGlobal)}">${n1(finalGlobal)}</td>
             </tr>
             <tr>
               <td>INASISTENCIAS POR PERÍODO</td>
@@ -14389,6 +14408,7 @@ function descargarBoletasPdf(grado, soloEstId){
 
   const asigs = asignaturasBoleta(grado);
   const n1 = v => v===null||v===undefined ? '' : v.toFixed(0);
+  const rj = v => (v===null || v===undefined) ? '' : (Math.round(v) < 70 ? ' rojo' : (Math.round(v) >= 90 ? ' alto' : ''));   // menores de 70 en rojo, 90 o más en verde
   const q = t => String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
   const hoja = (est)=>{
@@ -14418,17 +14438,17 @@ function descargarBoletasPdf(grado, soloEstId){
             ${itemsBoleta(grado).map(it=>{
               const fa = a=>`<tr>
               <td class="izqtxt">${q(a.nombre.toUpperCase())}</td>
-              ${[1,2,3,4].map(p=>`<td class="c">${vis.indexOf(p)>=0 ? n1(periodInfo(est.id,a.id,p,grado).valor) : ''}</td>`).join('')}
-              <td class="c b">${n1(finalMateriaVisible(est.id,a.id,grado,vis))}</td>
+              ${[1,2,3,4].map(p=>{ const v = vis.indexOf(p)>=0 ? periodInfo(est.id,a.id,p,grado).valor : null; return `<td class="c${rj(v)}">${n1(v)}</td>`; }).join('')}
+              <td class="c b${rj(finalMateriaVisible(est.id,a.id,grado,vis))}">${n1(finalMateriaVisible(est.id,a.id,grado,vis))}</td>
             </tr>`;
               if(it.tipo==='asig') return fa(it.a);
               const fc = cienciaPromedioFila(est.id, grado, vis);
-              return it.lista.map(fa).join('') + (fc ? `<tr><td class="izqtxt"><b>CIENCIA Y TECNOLOG&Iacute;A PROMEDIO</b></td>${fc.periodos.map(v=>`<td class="c b">${n1(v)}</td>`).join('')}<td class="c b">${n1(fc.final)}</td></tr>` : '');
+              return it.lista.map(fa).join('') + (fc ? `<tr><td class="izqtxt"><b>CIENCIA Y TECNOLOG&Iacute;A PROMEDIO</b></td>${fc.periodos.map(v=>`<td class="c b${rj(v)}">${n1(v)}</td>`).join('')}<td class="c b${rj(fc.final)}">${n1(fc.final)}</td></tr>` : '');
             }).join('')}
             <tr class="tot">
               <td class="izqtxt">PROMEDIO DE PER&Iacute;ODO</td>
-              ${[1,2,3,4].map(p=>`<td class="c">${vis.indexOf(p)>=0 ? n1(promedioPeriodoEstudiante(est.id,grado,p)) : ''}</td>`).join('')}
-              <td class="c verde">${n1(finalGlobal)}</td>
+              ${[1,2,3,4].map(p=>{ const v = vis.indexOf(p)>=0 ? promedioPeriodoEstudiante(est.id,grado,p) : null; return `<td class="c${rj(v)}">${n1(v)}</td>`; }).join('')}
+              <td class="c verde${rj(finalGlobal)}">${n1(finalGlobal)}</td>
             </tr>
             <tr>
               <td class="izqtxt">INASISTENCIAS POR PER&Iacute;ODO</td>
@@ -14534,6 +14554,8 @@ function descargarBoletasPdf(grado, soloEstId){
   '.tbl td:not(:first-child){ white-space:nowrap; }' +
   '.tbl th{ white-space:normal; }' +
   '.verde{ color:#0a7a3f; font-weight:bold; }' +
+  '.rojo, .verde.rojo{ color:#C62828 !important; font-weight:bold; background:#FDE8E8 !important; }' +
+  '.alto, .verde.alto{ color:#0a7a3f !important; font-weight:bold; background:#D8F1E2 !important; }' +
   '.tot td{ font-weight:bold; }' +
   '.izqtxt{ text-align:left; }' +
   '.obs{ border:none; padding:0; margin:10px 0 0; line-height:1.5; text-align:justify;' +
@@ -14543,6 +14565,16 @@ function descargarBoletasPdf(grado, soloEstId){
   '.firmas span{ display:block; border-top:1px solid #000; margin-bottom:3px; }' +
   '.firmas p{ margin:0; font-size:10px; }' +
   '.firmas .fn{ font-weight:bold; }' +
+  '*{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }' +
+  '.cab{ border-bottom:3px solid #2F5FB3; } .colegio{ color:#1e3a6e; }' +
+  '.ident-fila{ background:#EEF4FF; border-bottom:none; border-radius:5px; padding:6px 10px; }' +
+  '.hoja th, .hoja td{ border-color:#9fb4d8; }' +
+  '.tbl th{ background:#2F5FB3; color:#fff; border-color:#2F5FB3; }' +
+  '.tbl tr:nth-child(odd) td{ background:#F3F7FE; }' +
+  '.tbl tr.tot td{ background:#DCE8FB; color:#000; } .tbl td.verde{ color:#000; }' +
+  '.der th{ background:#5B9BD5; color:#fff; border-color:#5B9BD5; } .der td{ background:#F4F9FE; }' +
+  '.der .bloque:nth-child(2) th{ background:#4A86C5; } .der .bloque:nth-child(3) th{ background:#3F7BBD; } .der .bloque:nth-child(4) th{ background:#3A72B0; }' +
+  '.obs{ background:#FFFBEA; border:1px solid #F0DC8C; padding:6px 8px; border-radius:4px; }' +
   '</style></head><body>' + estudiantes.map(hoja).join('') +
   '<script>window.onload=function(){setTimeout(function(){window.print();},350);};' + cierre +
   '</body></html>';
