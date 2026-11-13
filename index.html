@@ -778,7 +778,7 @@ if('serviceWorker' in navigator){
    Cada entrega lleva un número de versión. Al abrir la plataforma (y cada cierto rato, o al volver a la
    pestaña) se compara con la versión publicada; si es distinta, aparece un aviso discreto abajo.
    Si es la misma, no pasa nada. Súbele el número cada vez que se publique una actualización. */
-const APP_VERSION = '2026-11-13-0900';
+const APP_VERSION = '2026-11-13-1100';
 let _avisoVersionMostrado = false, _ultimaRevisionVersion = 0;
 async function revisarVersionNueva(){
   if(_avisoVersionMostrado) return;
@@ -7389,11 +7389,16 @@ async function guardarReporte(){
     // Red de seguridad: si el mismo reporte (mismo estudiante, mismo texto,
     // mismo docente) ya se guardó hace poco —aunque haya sido en otra
     // pestaña o después de recargar la página—, no se crea uno repetido.
-    const yaGuardadoHaceRato = (DB.reportes||[]).some(r=>
-      r.estId===est.id && r.nivel===nivelReal && r.docenteId===currentUser.id &&
-      r.descripcion===desc && (Date.now() - new Date(r.ts).getTime()) < 600000
+    const repetidos = (DB.reportes||[]).concat(outboxLeer()).filter(r=>
+      r.estId===est.id && r.docenteId===currentUser.id &&
+      String(r.descripcion||'').trim()===desc && (Date.now() - new Date(r.ts).getTime()) < 30*86400000
     );
-    if(yaGuardadoHaceRato){ showToast('Ese reporte ya se guardó hace unos minutos; no se creó uno repetido.'); return; }
+    if(repetidos.length){
+      const r0 = repetidos[0];
+      const rec = (Date.now() - new Date(r0.ts).getTime()) < 600000;
+      if(rec){ showToast('Ese reporte ya se guardó hace unos minutos (No. '+correlativoTexto(r0.numero)+'); no se creó uno repetido.'); return; }
+      if(!confirm('Ya existe un reporte con el mismo texto para este estudiante (No. '+correlativoTexto(r0.numero)+', '+String(r0.fecha||r0.ts).slice(0,10)+').\n\n¿Quieres guardarlo otra vez de todos modos?')) return;
+    }
     let imagen = null;
     try{ imagen = await imagenDeInput('rep_imagen', 1000); }
     catch(e){ showToast('No se pudo procesar la foto; se guarda el reporte sin ella.'); }
@@ -12061,7 +12066,7 @@ function renderPersonalizar(){
             <td><span class="badge ${badgeClass(t)}">${esc(domainLabel(t))}</span></td>
             <td>
               <div class="clave-actual"><b class="mono">${esc(t.usuario||'—')}</b></div>
-              ${soloDir?`<button class="icon-btn" onclick="regenerarUsuarioDocente('${t.id}')">Regenerar</button>`:''}
+              ${soloDir?`<button class="icon-btn" onclick="editarUsuarioDocente('${t.id}')">Editar</button> <button class="icon-btn" onclick="regenerarUsuarioDocente('${t.id}')">Regenerar</button>`:''}
             </td>
             <td>
               ${soloDir && tieneClave(t) ? `<div class="clave-actual">
@@ -12702,6 +12707,44 @@ function definirClave(id){
   campo.value = '';
   showToast('Contraseña definida.');
   render();
+}
+function editarUsuarioDocente(id){
+  const t0 = DB.docentes.find(x=>x.id===id);
+  if(!t0) return;
+  if(esPropietario(t0)){ showToast('Esta cuenta no se puede modificar desde aquí.'); return; }
+  if(!isAdmin(currentUser)) return;
+  let d = document.getElementById('eu_modal'); if(d) d.remove();
+  d = document.createElement('div'); d.id = 'eu_modal';
+  d.style.cssText = 'position:fixed;inset:0;background:rgba(13,37,84,.45);z-index:10050;display:flex;align-items:center;justify-content:center;padding:16px;';
+  d.innerHTML = `<div style="background:#fff;color:#14213d;border-radius:16px;max-width:420px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+    <h3 style="margin:0 0 4px;font-size:19px;">Editar usuario</h3>
+    <p style="margin:0 0 14px;color:#556178;font-size:14px;">${esc(t0.nombre)}</p>
+    <input type="text" id="eu_txt" value="${esc(t0.usuario||'')}" autocomplete="off" autocapitalize="off" spellcheck="false" style="width:100%;margin-bottom:8px;">
+    <p style="margin:0 0 14px;font-size:13px;color:#556178;">Sin espacios ni tildes. Ejemplo: <code>antonio.capellan</code>. La persona entrará con este nuevo usuario; su contraseña y sus datos no cambian.</p>
+    <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-sm" id="eu_no">Cancelar</button><button class="btn btn-sm btn-primary" id="eu_ok">Guardar</button></div></div>`;
+  document.body.appendChild(d);
+  const txt = document.getElementById('eu_txt'); txt.focus(); txt.select();
+  document.getElementById('eu_no').onclick = ()=>d.remove();
+  const guardar = ()=>{
+    const v = txt.value.trim().toLowerCase();
+    if(!/^[a-z0-9._-]{3,40}$/.test(v)){ showToast('Usa de 3 a 40 letras, números, punto, guion o guion bajo, sin espacios ni tildes.'); return; }
+    if(v === t0.usuario){ d.remove(); return; }
+    if(usuarioDocenteExiste(v, id) || DB.docentes.some(x=>esPropietario(x) && String(x.usuario||'').toLowerCase()===v)){ showToast('Ese usuario ya lo tiene otra persona. Escribe otro.'); return; }
+    const antes = t0.usuario;
+    commit(doc=>{
+      const t = doc.docentes.find(x=>x.id===id); if(!t) return;
+      const viejo = t.usuario;
+      t.usuario = v;
+      // el registro de términos aceptados va ligado al usuario: se actualiza para que no se los vuelva a pedir
+      (t.terminosLog||[]).forEach(r=>{ if(r.usuario===viejo) r.usuario = v; });
+    });
+    registrar('Usuario', 'Cambió el usuario de acceso de '+t0.nombre+' ('+antes+' → '+v+')');
+    d.remove();
+    showToast('Usuario cambiado a '+v+'.');
+    render();
+  };
+  document.getElementById('eu_ok').onclick = guardar;
+  txt.addEventListener('keydown', e=>{ if(e.key==='Enter') guardar(); });
 }
 function regenerarUsuarioDocente(id){
   const t0 = DB.docentes.find(x=>x.id===id);
