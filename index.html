@@ -796,7 +796,7 @@ if('serviceWorker' in navigator){
    Cada entrega lleva un número de versión. Al abrir la plataforma (y cada cierto rato, o al volver a la
    pestaña) se compara con la versión publicada; si es distinta, aparece un aviso discreto abajo.
    Si es la misma, no pasa nada. Súbele el número cada vez que se publique una actualización. */
-const APP_VERSION = '2026-11-24-0900';
+const APP_VERSION = '2026-11-24-0915';
 let _avisoVersionMostrado = false, _ultimaRevisionVersion = 0;
 async function revisarVersionNueva(){
   if(_avisoVersionMostrado) return;
@@ -5042,6 +5042,22 @@ function asisCiclo(grado, f, estId){
   });
   render();
 }
+/* Botón "Guardar asistencia": manda lo marcado a la nube y avisa cuando quedó confirmado */
+let _asisGuardando = false;
+const ASIS_BTN_GUARDAR = `<div class="as-guardar" style="margin:14px 0 4px;"><button class="btn btn-primary" id="as_btn_guardar" style="width:100%;font-size:16px;padding:12px;" onclick="asisGuardar()">💾 Guardar asistencia</button><p class="nota-chica" id="as_msg_guardar" style="margin:6px 0 0;text-align:center;">Lo que marcas se guarda solo; este botón confirma que ya quedó guardado.</p></div>`;
+async function asisGuardar(){
+  if(_asisGuardando) return;
+  _asisGuardando = true;
+  const b = document.getElementById('as_btn_guardar'), m = document.getElementById('as_msg_guardar');
+  if(b){ b.disabled = true; b.textContent = 'Guardando…'; }
+  let ok = false;
+  try{ ok = await esperarGuardado(15000); }catch(e){}
+  _asisGuardando = false;
+  const b2 = document.getElementById('as_btn_guardar'), m2 = document.getElementById('as_msg_guardar');
+  if(b2){ b2.disabled = false; b2.textContent = ok ? '✓ Asistencia guardada' : '💾 Guardar asistencia'; }
+  if(m2){ m2.textContent = ok ? 'Guardado y confirmado a las ' + new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}) + '.' : 'No se pudo confirmar todavía (internet lento). No cierres la página: se seguirá intentando.'; m2.style.color = ok ? '#2A7A5A' : '#B5445A'; }
+  showToast(ok ? '✓ Asistencia guardada.' : '⏳ Aún no se confirma el guardado. No cierres la página.');
+}
 function asisTodosPresentes(grado, p, f){
   const ests = asisEstudiantes(grado, p);
   commit(doc=>{
@@ -5532,7 +5548,7 @@ function asisListaHtml(grado, p){
   }).join('');
   const cuenta = {P:0,T:0,A:0,J:0}; ests.forEach(e=>{ const m = asisMarca(grado,f,e.id); if(m) cuenta[m]++; });
   return dias + acciones + (filas || '<div class="card"><p class="empty">No hay estudiantes en esta aula.</p></div>') +
-    `<div class="as-resumen-dia">Hoy: ${cuenta.P} presentes · ${cuenta.T} tardías · ${cuenta.A} ausentes sin justificación · ${cuenta.J} ausentes justificados</div>`;
+    `<div class="as-resumen-dia">Hoy: ${cuenta.P} presentes · ${cuenta.T} tardías · ${cuenta.A} ausentes sin justificación · ${cuenta.J} ausentes justificados</div>` + (filas ? ASIS_BTN_GUARDAR : '');
 }
 function asisSemanaHtml(grado, p){
   const ss = asisSemanas(p), sem = ss[asisSemanaSel(p)] || [];
@@ -5550,7 +5566,7 @@ function asisSemanaHtml(grado, p){
   }).join('');
   const lg = ['P','A','T','J'].map(c=>`<span>${asisChip(c)} ${ASIS_COD[c]}</span>`).join('');
   return `<div class="table-wrap"><table class="as-tabla"><thead><tr><th>Estudiante</th>${th}<th>Semana</th></tr></thead><tbody>${filas}</tbody></table></div>
-    <div class="as-lg">${lg}<br>Toca una casilla para cambiarla (vacío → P → T → A → J).</div>`;
+    <div class="as-lg">${lg}<br>Toca una casilla para cambiarla (vacío → P → T → A → J).</div>` + ASIS_BTN_GUARDAR;
 }
 function asisResumenHtml(grado, p){
   const ests = asisEstudiantes(grado, p);
