@@ -796,7 +796,7 @@ if('serviceWorker' in navigator){
    Cada entrega lleva un número de versión. Al abrir la plataforma (y cada cierto rato, o al volver a la
    pestaña) se compara con la versión publicada; si es distinta, aparece un aviso discreto abajo.
    Si es la misma, no pasa nada. Súbele el número cada vez que se publique una actualización. */
-const APP_VERSION = '2026-11-13-1600';
+const APP_VERSION = '2026-11-24-0900';
 let _avisoVersionMostrado = false, _ultimaRevisionVersion = 0;
 async function revisarVersionNueva(){
   if(_avisoVersionMostrado) return;
@@ -4160,7 +4160,7 @@ function renderEnviarAviso(){
   const para = a=> a.para==='todos' ? 'todos' : (Array.isArray(a.para) ? a.para.map(nom).join(', ') : nom(a.para));
   return `<div class="card" id="av_card" style="margin-bottom:18px;">
     <h3 style="margin:0 0 4px;">📣 Enviar un aviso</h3>
-    <p style="margin:0 0 12px;color:var(--muted);font-size:14px;">Marca a quién se lo mandas: solo aparecen las personas que están conectadas en este momento. Les sale en una ventana donde pueden responder. Si se lo mandas a varias, todas ven las respuestas como una conversación en grupo.</p>
+    <p style="margin:0 0 12px;color:var(--muted);font-size:14px;">Marca a quién se lo mandas: solo aparecen las personas que están conectadas en este momento. Les sale en una ventana donde pueden responder. Si se lo mandas a varias, todas ven las respuestas como una conversación en grupo. Cuando todas lo leen y cierran la ventana, el aviso desaparece.</p>
     <div id="av_lista" style="margin:0 0 12px;">${avListaHTML()}</div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;">
       <textarea id="av_texto" maxlength="300" rows="2" placeholder="Escribe el aviso (máximo 300 letras)" style="flex:1 1 260px;min-width:0;"></textarea>
@@ -4182,7 +4182,7 @@ function enviarAviso(){
     doc.avisos = doc.avisos || [];
     const ahora = Date.now();
     for(let i=doc.avisos.length-1;i>=0;i--){ if(ahora - avisoUlt(doc.avisos[i]) > 3600*1000) doc.avisos.splice(i,1); }
-    doc.avisos.push({id, deId: currentUser.id, deNombre: esPropietario(currentUser) ? 'Administración' : currentUser.nombre, para, texto, ts: ahora});
+    doc.avisos.push({id, deId: currentUser.id, deNombre: esPropietario(currentUser) ? 'Administración' : currentUser.nombre, para, texto, ts: ahora, leidos:{[currentUser.id]:1}});
   });
   avisoMarcarVisto(id); avisoMarcarN(id, 1);
   if(t) t.value = '';
@@ -4253,7 +4253,7 @@ function mostrarChatAviso(a, previa){
     if(responderAviso(d._avId, txt)){ t.value=''; pintar(); }
   };
   document.getElementById('av_resp').addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); document.getElementById('av_enviar').click(); } });
-  document.getElementById('aviso_ok').onclick = ()=>{ if(!d._avPrevia){ const x = avisoBuscar(d._avId); if(x) avisoMarcarN(x.id, avisoMsgs(x).length); } d.remove(); setTimeout(revisarAvisos,300); };
+  document.getElementById('aviso_ok').onclick = ()=>{ if(!d._avPrevia){ const x = avisoBuscar(d._avId); if(x){ avisoMarcarN(x.id, avisoMsgs(x).length); avisoMarcarLeido(x.id); } } d.remove(); setTimeout(revisarAvisos,300); };
   setTimeout(()=>{ const t=document.getElementById('av_resp'); if(t) t.focus(); }, 100);
 }
 function responderAviso(id, texto){
@@ -4266,9 +4266,21 @@ function responderAviso(id, texto){
     x.respuestas = x.respuestas || [];
     x.respuestas.push({id:rid, deId:currentUser.id, deNombre:nombre, texto, ts:Date.now()});
     if(x.respuestas.length > 100) x.respuestas.splice(0, x.respuestas.length-100);
+    x.leidos = x.leidos || {}; x.leidos[currentUser.id] = 1 + x.respuestas.length;
   });
   const y = avisoBuscar(id); if(y) avisoMarcarN(id, avisoMsgs(y).length);
   return true;
+}
+/* Al cerrar la ventana se da por leído. Cuando todas las personas ya leyeron todos los mensajes, el aviso desaparece para todas. */
+function avisoMarcarLeido(id){
+  const yo = currentUser.id;
+  commit(doc=>{
+    const i = (doc.avisos||[]).findIndex(y=>y && y.id===id); if(i<0) return;
+    const x = doc.avisos[i], total = avisoMsgs(x).length;
+    x.leidos = x.leidos || {}; x.leidos[yo] = total;
+    const parts = [x.deId].concat(Array.isArray(x.para) ? x.para : []);
+    if(Array.isArray(x.para) && parts.every(pid=>(x.leidos[pid]||0) >= total)) doc.avisos.splice(i,1);
+  });
 }
 function abrirAvisoPorId(id){
   const a = avisoBuscar(id); if(!a){ showToast('Esta conversación ya terminó.'); return; }
@@ -4278,7 +4290,7 @@ function abrirAvisoPorId(id){
 function avisoBotonFlotante(){
   let b = document.getElementById('av_fab');
   const ahora = Date.now();
-  const lista = (currentUser && !sesionEstudiante && Array.isArray(DB.avisos)) ? DB.avisos.filter(x=>x && avisoEsParticipante(x, currentUser) && ahora - avisoUlt(x) < 3600*1000 && (avisoMsgs(x).length>1 || x.deId!==currentUser.id)) : [];
+  const lista = (currentUser && !sesionEstudiante && Array.isArray(DB.avisos)) ? DB.avisos.filter(x=>x && avisoEsParticipante(x, currentUser) && ahora - avisoUlt(x) < 3600*1000 && avisoMsgs(x).slice(avisoNVistos()[x.id]||0).some(m=>m.deId!==currentUser.id)) : [];
   if(!lista.length || document.getElementById('aviso_live')){ if(b) b.remove(); return; }
   lista.sort((p,q)=>avisoUlt(q)-avisoUlt(p));
   if(!b){
@@ -4287,7 +4299,7 @@ function avisoBotonFlotante(){
     document.body.appendChild(b);
   }
   b.dataset.id = lista[0].id;
-  b.textContent = '💬 Avisos';
+  b.textContent = '💬 Aviso nuevo';
   b.onclick = ()=>abrirAvisoPorId(b.dataset.id);
 }
 function revisarAvisos(){
@@ -5088,7 +5100,7 @@ function asisSemanaSel(p){
   const ss = asisSemanas(p); if(!ss.length) return -1;
   let i = getPref('asisSem_'+p, null);
   if(i===null || i===undefined || i==='' || isNaN(Number(i))){
-    const hoy = hoyISO(); const k = ss.findIndex(s=>s.indexOf(hoy)>=0 || s[0]>hoy);
+    const hoy = asisHoyLocal(); const k = ss.findIndex(s=>s.indexOf(hoy)>=0 || s[0]>hoy);
     i = k>=0 ? k : ss.length-1;
   }
   return Math.min(ss.length-1, Math.max(0, Number(i)));
@@ -5096,7 +5108,17 @@ function asisSemanaSel(p){
 function asisDiaSel(sem){
   const d = getPref('asisDia','');
   if(sem.indexOf(d)>=0) return d;
-  const hoy = hoyISO(); return sem.indexOf(hoy)>=0 ? hoy : sem[0];
+  const hoy = asisHoyLocal(); return sem.indexOf(hoy)>=0 ? hoy : sem[0];
+}
+/* Al entrar a Asistencia siempre se abre en el día de hoy, en "Pase de lista", para pasar asistencia de una vez */
+let _asisHoyAplicado = null;
+function asisAbrirHoy(){
+  const hoy = asisHoyLocal(); _asisHoyAplicado = hoy;
+  PREFS['asisTab'] = 'lista';
+  const p = asisPeriodoDe(hoy); if(!p) return;
+  const ss = asisSemanas(p), i = ss.findIndex(s=>s.indexOf(hoy)>=0);
+  PREFS['asisPer'] = p;
+  if(i>=0){ PREFS['asisSem_'+p] = i; PREFS['asisDia'] = hoy; }
 }
 function asisChip(cod, grande){ return `<span class="as-c as-${cod}${grande?' as-g':''}">${cod}</span>`; }
 /* ---- Asistencia: Ausentes del día y Fechas pendientes ---- */
@@ -5456,6 +5478,7 @@ function asisPierdeCaja(g, f, hora){
   return `<div style="${base}"><div style="font-weight:700;color:#12306E;margin-bottom:6px">Lo que pierde (según el horario del grado)</div>${pr.map(x=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px dashed #E1E8F5;font-size:15px"><span>${esc(x.materia)}${x.maestra?` <span style="color:#6B7A99;font-size:13px">· ${esc(x.maestra)}</span>`:''}</span><b style="color:#B5445A">${asisTextoPierde(x)}</b></div>`).join('')}</div>`;
 }
 function renderAsistencia(){
+  if(_asisHoyAplicado !== asisHoyLocal()){ try{ asisAbrirHoy(); }catch(e){} }
   if(!asisPuede()) return renderNoAccess();
   const grados = DB.config.grados || [];
   const head = `<div class="page-head"><p class="page-eyebrow">Registro</p>
@@ -5555,13 +5578,13 @@ function asisResumenHtml(grado, p){
   const mm = Object.entries(mot).sort((a,b)=>b[1]-a[1]), mx = mm.length ? mm[0][1] : 1;
   const motHtml = mm.length ? mm.map(([k,v])=>`<div class="as-mb"><span>${esc(k)}</span><i style="width:${Math.max(6,v/mx*140)}px"></i><em>${v}</em></div>`).join('') : '<p class="nota-chica">Sin ausencias ni justificadas.</p>';
   const pj = (n,t)=> t ? ((n/t*100).toFixed(1).replace(/\.0$/,''))+'%' : '—';
-  const filas = porEst.map(({e,c},i)=>`<tr><td>${i+1}. ${esc(asisNombre(e))}</td><td class="as-tP">${c.P}</td><td class="as-tP">${pj(c.P,c.total)}</td><td class="as-tT">${c.T}</td><td class="as-tT">${pj(c.T,c.total)}</td><td class="as-tA">${c.A}</td><td class="as-tA">${pj(c.A,c.total)}</td><td class="as-tJ">${c.J}</td><td class="as-tJ">${pj(c.J,c.total)}</td><td><b>${pj(c.A+c.J,c.total)}</b></td><td>${c.total}</td>
+  const filas = porEst.map(({e,c},i)=>`<tr><td>${i+1}. ${esc(asisNombre(e))}</td><td class="as-tP">${c.P}</td><td class="as-tP">${pj(c.P,c.total)}</td><td class="as-tT">${c.T}</td><td class="as-tT">${pj(c.T,c.total)}</td><td class="as-tA">${c.A}</td><td class="as-tA">${pj(c.A,c.total)}</td><td class="as-tJ">${c.J}</td><td class="as-tJ">${pj(c.J,c.total)}</td><td><b>${c.A+c.J}</b></td><td><b>${pj(c.A+c.J,c.total)}</b></td><td>${c.total}</td>
     <td><span class="as-bol">${asisTextoBoleta(c)}</span> <button class="btn btn-sm" onclick="asisPasarABoleta('${esc(grado)}',${p},'${e.id}');showToast('Pasó a la boleta.');render()">Pasar</button></td></tr>`).join('');
   return `${kpis}
   <div class="as-g2"><div class="card"><div class="card-title">Por semana</div><div class="as-bars">${bars}</div><div class="as-lg">${lg}</div></div>
   <div class="card"><div class="card-title">Todo el período</div><div class="as-donut" style="background:${grados}"><span>${asistencia.toFixed(0)}%</span></div><div class="as-lg" style="text-align:center">asistencia</div>
   <div class="card-title" style="margin-top:12px">Motivos de las ausencias justificadas</div>${motHtml}</div></div>
-  <div class="card"><div class="card-title">Por estudiante</div><div class="table-wrap"><table class="as-tabla"><thead><tr><th>Estudiante</th><th>Presente</th><th>%</th><th>Tardías</th><th>%</th><th>Sin justificar</th><th>%</th><th>Justificados</th><th>%</th><th>% Inasistencia<br><small style="font-weight:400">(sin justif. + justif.)</small></th><th>Total días</th><th>Para la boleta</th></tr></thead><tbody>${filas}</tbody></table></div>
+  <div class="card"><div class="card-title">Por estudiante</div><div class="table-wrap"><table class="as-tabla"><thead><tr><th>Estudiante</th><th>Presente</th><th>%</th><th>Tardías</th><th>%</th><th>Sin justificar</th><th>%</th><th>Justificados</th><th>%</th><th>Inasistencias<br><small style="font-weight:400">(sin justif. + justif.)</small></th><th>% Inasistencia<br><small style="font-weight:400">(sin justif. + justif.)</small></th><th>Total días</th><th>Para la boleta</th></tr></thead><tbody>${filas}</tbody></table></div>
   <p class="nota-chica">Cada porcentaje es sobre el total de días de clase. <b>Para la boleta</b> usa solo las ausencias sin justificación: <b>9%/43</b> = 9% sobre 43 días de clase. Los días se cuentan solo cuando se tomó lista y no son feriados. Las justificadas cuentan como asistencia.</p>
   <div class="btn-row"><button class="btn btn-primary" onclick="asisPasarTodasABoleta('${esc(grado)}',${p})">Pasar todo el grupo a las boletas</button></div></div>`;
 }
@@ -5895,6 +5918,7 @@ function goTo(id){
     if(historialNav.length > 20) historialNav.shift();
   }
   volverDesdeSeguimiento = null;
+  if(id==='asistencia'){ try{ asisAbrirHoy(); }catch(e){} }
   currentView = id; viewState = {}; render();
   guardarSesion();
   pullCambios(true); // al cambiar de sección se traen los cambios de otros docentes
